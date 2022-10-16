@@ -2,8 +2,10 @@
   import Button, { Group, Label } from "@smui/button";
   import Img2img from "./Img2img.svelte";
   import Text2img from "./Text2img.svelte";
-  let clicked = 0;
-  let selected = "B";
+  import statefulSwap from "../scripts/statefulSwap";
+  import {fly, scale} from "svelte/transition"
+  const {onOutro, transitionTo, state} = statefulSwap("second")
+  let selected = "second"
 </script>
 
 <div
@@ -11,30 +13,39 @@
 >
   <Group variant="unelevated" class="flex m-3 w-1/2">
     <Button
-      on:click={() => (selected = "A")}
+      on:click={() => {
+        transitionTo("first")
+        selected = "first"
+      }}
       variant="unelevated"
-      color={selected === "A" ? "primary" : "secondary"}
-      style={selected === "A"
+      color={selected === "first" ? "primary" : "secondary"}
+      style={selected === "first"
         ? "width: 60%;"
         : "width: 20%; transition: width 0.2s;"}
     >
       <Label>图片转图片</Label>
     </Button>
     <Button
-      on:click={() => (selected = "B")}
+      on:click={() => {
+        transitionTo("second")
+        selected = "second"
+      }}
       variant="unelevated"
-      color={selected === "B" ? "primary" : "secondary"}
-      style={selected === "B"
+      color={selected === "second" ? "primary" : "secondary"}
+      style={selected === "second"
         ? "width: 60%;"
         : "width: 20%; transition: width 0.2s;"}
     >
       <Label>文字转图片</Label>
     </Button>
     <Button
-      on:click={() => (selected = "C")}
+      on:click={() => {
+        transitionTo("third")
+        selected = "third"
+      }}
       variant="unelevated"
-      color={selected === "C" ? "primary" : "secondary"}
-      style={selected === "C"
+      color={selected === "third" ? "primary" : "secondary"}
+      style={selected === "third"
         ? "width: 60%;"
         : "width: 20%; transition: width 0.2s;"}
     >
@@ -44,15 +55,21 @@
 </div>
 
 <div class="fixed top-16 left-16">
-  {#if selected === "A"}
-    <div>
+  {#if $state === "first"}
+    <div
+      in:fly={{y:-20}} out:fly={{y:-20}} on:outroend={onOutro}
+    >
       <Img2img />
     </div>
-  {:else if selected === "B"}
-    <div>
+  {:else if $state === "second"}
+    <div
+      in:fly={{y:-20}} out:fly={{y:-20}} on:outroend={onOutro}
+    >
       <Text2img />
     </div>
-  {:else if selected === "C"}
-    <div>C</div>
+  {:else if $state === "third"}
+    <div
+      in:fly={{y:-20}} out:fly={{y:-20}} on:outroend={onOutro}
+    >C</div>
   {/if}
 </div>

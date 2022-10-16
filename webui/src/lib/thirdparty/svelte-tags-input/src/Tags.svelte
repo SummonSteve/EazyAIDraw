@@ -12,7 +12,6 @@
     } from "../../../scripts/state";
     import { onMount } from "svelte";
     import { addMessage, messageType } from "../../../scripts/message";
-    import { writable, get } from "svelte/store";
 
     const flipDurationMs = 200;
 
@@ -46,22 +45,22 @@
     export let onlyAutocomplete;
     export let labelText;
     export let labelShow;
-    export let items = [];
+    export let items;
     export let use_way;
 
     function refresh() {
         if (use_way === "text2img") {
-            tags = get(text2img_tags).map((tag) => tag.name);
-            items = get(text2img_tags)
-                .map((tag: Tag) => ({ id: tag.order, tag: tag.name }))
+            tags = $text2img_tags.map((tag) => tag.name);
+            items = $text2img_tags
+                .map((tag: Tag) => ({ id: tag.order, tag: tag.name, remove_selected: false, focus_selected: false }))
                 .sort((a, b) => a.id - b.id);
-                console.log("refresh text2img", items);
+            console.log("refresh text2img", items);
         } else {
-            tags = get(img2img_tags).map((tag) => tag.name);
-            items = get(img2img_tags)
-                .map((tag: Tag) => ({ id: tag.order, tag: tag.name }))
+            tags = $img2img_tags.map((tag) => tag.name);
+            items = $img2img_tags
+                .map((tag: Tag) => ({ id: tag.order, tag: tag.name, remove_selected: false, focus_selected: false }))
                 .sort((a, b) => a.id - b.id);
-                console.log("refresh img2img", items);
+            console.log("refresh img2img", items);
         }
     }
 
@@ -85,6 +84,7 @@
     let layoutElement;
 
     $: tags = tags || [];
+    $: items = items || [];
     $: addKeys = addKeys || [13];
     $: maxTags = maxTags || false;
     $: onlyUnique = onlyUnique || false;
@@ -120,22 +120,44 @@
         items = e.detail.items;
 
         if (use_way === "text2img") {
-            let _tags: Array<Tag> = get(text2img_tags);
+            let _tags: Array<Tag> = $text2img_tags;
             _tags.forEach((tag) => {
                 tag.order = items.findIndex((item) => item.tag === tag.name);
             });
             text2img_tags.set(_tags);
         } else {
-            let _tags: Array<Tag> = get(img2img_tags);
+            let _tags: Array<Tag> = $img2img_tags;
             _tags.forEach((tag) => {
                 tag.order = items.findIndex((item) => item.tag === tag.name);
             });
             img2img_tags.set(_tags);
         }
     }
-
-    function setTag(e) {
+    function handleKeydown(e) {
         const currentTag = e.target.value;
+
+        if (removeKeys) {
+            if (removeKeys.includes(e.keyCode) && tags.length > 0) {
+                if (currentTag.length === 0) {
+                    let tag_to_remove = items[items.length - 1];
+                    if (tag_to_remove.remove_selected) {
+                        removeTag(items[items.length - 1].id);
+                        dispatch("tags", {
+                            tags: tags,
+                        });
+                        arrelementsmatch = [];
+                    } else {
+                        items[items.length - 1].remove_selected = true;
+                        tag_to_remove.remove_selected = true;
+                    }
+                }
+            }
+        }
+
+        if (e.keyCode === 27) {
+            items.forEach((item) => (item.remove_selected = false));
+            items = items;
+        }
 
         if (addKeys) {
             addKeys.forEach(function (key) {
@@ -164,23 +186,20 @@
             });
         }
 
+        /*
         if (removeKeys) {
             removeKeys.forEach(function (key) {
                 if (key === e.keyCode && tag === "") {
                     tags.pop();
                     tags = tags;
 
-                    dispatch("tags", {
-                        tags: tags,
-                    });
-
-                    arrelementsmatch = [];
+                    
                     document.getElementById(id).readOnly = false;
                     placeholder = storePlaceholder;
                     document.getElementById(id).focus();
                 }
             });
-        }
+        }*/
 
         // ArrowDown : focus on first element of the autocomplete
         if (
@@ -247,8 +266,8 @@
             placeholder = "";
         }
 
-        items = tags.map((tag) => ({ id: tags.indexOf(tag), tag: tag }));
-        console.log("items", items);
+        items = tags.map((tag) => ({ id: tags.indexOf(tag), tag: tag, remove_selected: false, focus_selected: false }));
+
 
         if (use_way === "text2img") {
             text2img_tags.update((tags) => [
@@ -266,10 +285,14 @@
     function removeTag(i) {
         tags.splice(i, 1);
         items = items.filter((item) => item.id !== i);
-        if(use_way === "text2img") {
-            text2img_tags.update((tags) => tags.filter((tag) => tag.order !== i));
+        if (use_way === "text2img") {
+            text2img_tags.update((tags) =>
+                tags.filter((tag) => tag.order !== i)
+            );
         } else {
-            img2img_tags.update((tags) => tags.filter((tag) => tag.order !== i));
+            img2img_tags.update((tags) =>
+                tags.filter((tag) => tag.order !== i)
+            );
         }
 
         dispatch("tags", {
@@ -324,6 +347,8 @@
     }
 
     function onClick() {
+        items.forEach((item) => (item.remove_selected = false));
+        items = items;
         (!minChars || minChars == 0) && getMatchElements();
     }
 
@@ -469,6 +494,7 @@
                 <div
                     class="svelte-tags-input-tag"
                     animate:flip={{ duration: flipDurationMs }}
+                    style="{item.remove_selected ? 'background-color: #ff0066; color: #000000;' : ''}"
                 >
                     {#if typeof item.tag === "string"}
                         {item.tag}
@@ -492,7 +518,7 @@
         {id}
         {name}
         bind:value={tag}
-        on:keydown={setTag}
+        on:keydown={handleKeydown}
         on:keyup={getMatchElements}
         on:paste={onPaste}
         on:drop={onDrop}

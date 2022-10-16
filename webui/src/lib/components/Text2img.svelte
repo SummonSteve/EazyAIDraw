@@ -2,6 +2,7 @@
     // @ts-nocheck
     import { syncTags } from "../scripts/state";
     import Tags from "../thirdparty/svelte-tags-input/src/Tags.svelte";
+    import {img2img_tags} from "../scripts/state";
     let tag = "";
 
     function handleTags(event) {
@@ -18,7 +19,8 @@
         />
         <div class="ml-2 translation">
             <button
-                class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded h-max"
+                disabled = '{$img2img_tags.length === 0}'
+                class= "{$img2img_tags.length === 0 ? 'bg-gray-500 text-white font-bold py-2 px-4 rounded h-max' : 'bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded h-max'}"
                 on:click={() => {
                     syncTags("text2img");
                 }}
