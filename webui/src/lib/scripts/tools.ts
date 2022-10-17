@@ -8,25 +8,37 @@ import { img2img_positive_tags,
         img2img_negative_tags_input,
         text2img_negative_tags_input,
         Usage, Tag, TagType } from "./state";
+import { addMessage, messageType } from "./message";
 
 const cfgs = ['Steps:', 'Sampler:', 'CFG scale:', 'Seed:', 'Face restoration', 'Size', 'Model hash:', 'Clip skip:', 'ENSD:', 'Denoising strength:']
 
 export const refresh_event_notifier = writable(0);
 
 export function parsePromptString(usage: Usage) {
-    let tagArray: Tag[] = [];
+    let positiveTagArray: Tag[] = [];
+    let negativeTagArray: Tag[] = [];
     let prompt_str = "";
     if (usage === Usage.img2img_positive) {
         prompt_str = get(img2img_positive_tags_input);
-    } else {
+    } else if (usage === Usage.text2img_positive) {
         prompt_str = get(text2img_positive_tags_input);
+    } else if (usage === Usage.img2img_negative) {
+        prompt_str = get(img2img_negative_tags_input);
+    } else if (usage === Usage.text2img_negative) {
+        prompt_str = get(text2img_negative_tags_input);
     }
+
     let positive = ""
     let negative = "";
-    if (prompt_str.includes("Negative prompt")) {
-        let str_split = prompt_str.split("Negative prompt");
+    if (prompt_str.includes("Negative prompt:")) {
+        let str_split = prompt_str.split("Negative prompt:");
         positive = str_split[0]
         negative = str_split[1]
+        if ((usage === Usage.img2img_positive || usage === Usage.text2img_positive) && positive.length === 0) {
+            addMessage("Can't put neagtive prompt in positive prompt", messageType.error, 5000);
+            return;
+        }
+
     } else {
         positive = prompt_str;
     }
@@ -40,19 +52,48 @@ export function parsePromptString(usage: Usage) {
     })
 
     let positive_tags = positive.split(",");
-    positive_tags.forEach((tag, i) => {
-        tagArray.push(parseTag(tag, i));
-    });
+    let negative_tags = negative.split(",");
+
+    if (usage === Usage.img2img_positive || usage === Usage.text2img_positive) {
+        positive_tags.forEach((tag, i) => {
+            positiveTagArray.push(parseTag(tag, i));
+        });
+
+        if(negative_tags.length > 1) {
+            negative_tags.forEach((tag, i) => {
+                negativeTagArray.push(parseTag(tag, i));
+            });
+        }
+
+    } else if (usage === Usage.img2img_negative || usage === Usage.text2img_negative) {
+        negative_tags.forEach((tag, i) => {
+            negativeTagArray.push(parseTag(tag, i));
+        });
+    }
+
 
     if (usage === Usage.img2img_positive) {
-        //todo
-    } else {
-        
+        img2img_positive_tags.set(positiveTagArray);
+        img2img_negative_tags.set(negativeTagArray);
+    } else if (usage === Usage.text2img_positive) {
+        text2img_positive_tags.set(positiveTagArray);
+        text2img_negative_tags.set(negativeTagArray);
+    } else if (usage === Usage.img2img_negative) {
+        img2img_negative_tags.set(negativeTagArray);
+    } else if (usage === Usage.text2img_negative) {
+        text2img_negative_tags.set(negativeTagArray);
     }
 
     // remove tag name duplicates
     let name_list = [];
-    tagArray.forEach((tag, i) => {
+    positiveTagArray.forEach((tag, i) => {
+        if (name_list.includes(tag.name)) {
+            tag.name = tag.name + `#${i}`;
+        } else {
+            name_list.push(tag.name);
+        }
+    });
+    negativeTagArray.forEach((tag, i) => {
         if (name_list.includes(tag.name)) {
             tag.name = tag.name + `#${i}`;
         } else {

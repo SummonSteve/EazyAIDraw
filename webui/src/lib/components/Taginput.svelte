@@ -1,5 +1,4 @@
 <script>
-    
     import { syncTags, Usage } from "../scripts/state";
     import { parsePromptString } from "../scripts/tools";
     import Tags from "./Tags.svelte";
@@ -48,6 +47,18 @@
             return $img2img_negative_tags_input.length === 0;
         }
     };
+
+    $: can_parse = () => {
+        if (usage == Usage.text2img_positive) {
+            return $text2img_positive_tags.length === 0;
+        } else if (usage == Usage.img2img_positive) {
+            return $img2img_positive_tags.length === 0;
+        } else if (usage == Usage.text2img_negative) {
+            return $text2img_negative_tags.length === 0;
+        } else if (usage == Usage.img2img_negative) {
+            return $img2img_negative_tags.length === 0;
+        }
+    };
 </script>
 
 <div class="m-4 custom-tag max-w-2xl">
@@ -70,26 +81,14 @@
                 ? button_disable_class
                 : button_enable_class}
             on:click={() => {
-                if (usage == Usage.text2img_positive) {
-                    if ($text2img_positive_tags.length === 0) {
-                        parsePromptString(usage);
-                    } else {
-                        addMessage(
-                            "Can't parse input when tags is nonempty",
-                            messageType.warning,
-                            5000
-                        );
-                    }
-                } else if (usage == Usage.img2img_positive) {
-                    if ($img2img_positive_tags.length === 0) {
-                        parsePromptString(usage);
-                    } else {
-                        addMessage(
-                            "Can't parse input when tags is nonempty",
-                            messageType.warning,
-                            5000
-                        );
-                    }
+                if (can_parse()) {
+                    parsePromptString(usage);
+                } else {
+                    addMessage(
+                        "Can't parse input when tags is nonempty",
+                        messageType.warning,
+                        5000
+                    );
                 }
             }}
         >
