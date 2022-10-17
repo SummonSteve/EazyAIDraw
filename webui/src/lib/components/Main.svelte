@@ -8,6 +8,26 @@
   let selected = "second"
 </script>
 
+<div class="ml-16 mt-20">
+  {#if $state === "first"}
+    <div
+      in:fly={{y:-20}} out:fly={{y:-20}} on:outroend={onOutro}
+    >
+      <Img2img />
+    </div>
+  {:else if $state === "second"}
+    <div class="relative"
+      in:fly={{y:-20}} out:fly={{y:-20}} on:outroend={onOutro}
+    >
+      <Text2img />
+    </div>
+  {:else if $state === "third"}
+    <div
+      in:fly={{y:-20}} out:fly={{y:-20}} on:outroend={onOutro}
+    >C</div>
+  {/if}
+</div>
+
 <div
   class="fixed top-0 left-16 h-16 w-screen m-0 flex flex-row bg-blue-300 text-gray-600 shadow-lg"
 >
@@ -52,24 +72,4 @@
       <Label>图片放大</Label>
     </Button>
   </Group>
-</div>
-
-<div class="fixed top-16 left-16">
-  {#if $state === "first"}
-    <div
-      in:fly={{y:-20}} out:fly={{y:-20}} on:outroend={onOutro}
-    >
-      <Img2img />
-    </div>
-  {:else if $state === "second"}
-    <div
-      in:fly={{y:-20}} out:fly={{y:-20}} on:outroend={onOutro}
-    >
-      <Text2img />
-    </div>
-  {:else if $state === "third"}
-    <div
-      in:fly={{y:-20}} out:fly={{y:-20}} on:outroend={onOutro}
-    >C</div>
-  {/if}
 </div>

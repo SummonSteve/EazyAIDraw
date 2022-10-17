@@ -4,7 +4,6 @@
         message,
         addMessage,
         Message,
-        addTestMessage,
     } from "../scripts/message";
 
     let msg: Message;
@@ -45,7 +44,7 @@
 {#each messageArray as msg, i}
     <!-- svelte-ignore a11y-mouse-events-have-key-events -->
     <div
-        class="bg-yellow-200 min-w-[20%] right-0 absolute m-0 pl-10 pt-6 pb-6 pr-3 border-l-[8px] border-l-amber-300 rounded-lg flex flex-row shadow-lg alert {msg.show
+        class="fixed bg-yellow-200 min-w-[20%] right-0 m-0 pl-10 pt-6 pb-6 pr-3 border-l-[8px] border-l-amber-300 rounded-lg flex flex-row shadow-lg alert {msg.show
             ? 'show'
             : 'hide'}
             hover:shadow-xl hover:bg-yellow-300
@@ -53,10 +52,10 @@
         style="top: {i * 80}px;"
         on:mouseover|once={() => messageHover(msg.id)}
     >
-        <span>{msg.text}</span>
+        <span class="text mr-12">{msg.text}</span>
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <span
-            class="absolute h-[72px] top-0 right-0 bg-yellow-400 pt-6 pb-6 pl-4 pr-3 hover:bg-red-500 hover:text-white rounded-lg transition-all duration-200 ease-in-out cursor-pointer"
+            class="absolute h-[72px] top-0 right-0 bg-yellow-400 pt-6 pb-6 pl-4 pr-3 shadow-sm hover:bg-red-500 hover:text-white rounded-lg transition-all duration-200 ease-in-out cursor-pointer"
             on:click={() => {
                 hideMessage(msg.id);
             }}
@@ -65,8 +64,6 @@
         </span>
     </div>
 {/each}
-
-<button on:click={addTestMessage}> Notification test </button>
 
 <style>
     .alert.show {
@@ -90,18 +87,16 @@
         0% {
             transform: translateX(-10px);
         }
-        40% {
-            transform: translateX(0%);
-        }
-        80% {
-            transform: translateX(-10%);
-        }
         100% {
             transform: translateX(100%);
         }
     }
 
     .alert.hide {
-        animation: hide_slide 0.8s ease forwards;
+        animation: hide_slide 0.8s ease-in-out forwards;
+    }
+
+    .text{
+        font-size: 1.2rem;
     }
 </style>

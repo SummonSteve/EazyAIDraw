@@ -1,17 +1,24 @@
 <script lang="ts">
-    // @ts-nocheck
 
     import { createEventDispatcher, onDestroy } from "svelte";
     import { dndzone } from "svelte-dnd-action";
     import { flip } from "svelte/animate";
     import {
-        img2img_tags,
-        text2img_tags,
+        img2img_negative_tags,
+        img2img_positive_tags,
+        text2img_negative_tags,
+        text2img_positive_tags,
+        text2img_negative_tags_input,
+        text2img_positive_tags_input,
+        img2img_negative_tags_input,
+        img2img_positive_tags_input,
         sync_event_notifier,
         Tag,
-    } from "../../../scripts/state";
+        Usage,
+    } from "../scripts/state";
     import { onMount } from "svelte";
-    import { addMessage, messageType } from "../../../scripts/message";
+    import { addMessage, messageType } from "../scripts/message";
+    import { refresh_event_notifier } from "../scripts/tools";
 
     const flipDurationMs = 200;
 
@@ -46,40 +53,94 @@
     export let labelText;
     export let labelShow;
     export let items;
-    export let use_way;
+    export let usage: Usage;
 
     function refresh() {
-        if (use_way === "text2img") {
-            tags = $text2img_tags.map((tag) => tag.name);
-            items = $text2img_tags
-                .map((tag: Tag) => ({ id: tag.order, tag: tag.name, remove_selected: false, focus_selected: false }))
+        if (usage === Usage.text2img_positive) {
+            
+            tags = $text2img_positive_tags.map((tag) => tag.name);
+            items = $text2img_positive_tags
+                .map((tag: Tag) => ({
+                    id: tag.order,
+                    tag: tag.name,
+                    remove_selected: false,
+                    focus_selected: false,
+                }))
                 .sort((a, b) => a.id - b.id);
-            console.log("refresh text2img", items);
-        } else {
-            tags = $img2img_tags.map((tag) => tag.name);
-            items = $img2img_tags
-                .map((tag: Tag) => ({ id: tag.order, tag: tag.name, remove_selected: false, focus_selected: false }))
+        } else if (usage === Usage.img2img_positive) {
+            tags = $img2img_positive_tags.map((tag) => tag.name);
+            items = $img2img_positive_tags
+                .map((tag: Tag) => ({
+                    id: tag.order,
+                    tag: tag.name,
+                    remove_selected: false,
+                    focus_selected: false,
+                }))
                 .sort((a, b) => a.id - b.id);
-            console.log("refresh img2img", items);
+        } else if (usage === Usage.text2img_negative) {
+            tags = $text2img_negative_tags.map((tag) => tag.name);
+            items = $text2img_negative_tags
+                .map((tag: Tag) => ({
+                    id: tag.order,
+                    tag: tag.name,
+                    remove_selected: false,
+                    focus_selected: false,
+                }))
+                .sort((a, b) => a.id - b.id);
+        } else if (usage === Usage.img2img_negative) {
+            tags = $img2img_negative_tags.map((tag) => tag.name);
+            items = $img2img_negative_tags
+                .map((tag: Tag) => ({
+                    id: tag.order,
+                    tag: tag.name,
+                    remove_selected: false,
+                    focus_selected: false,
+                }))
+                .sort((a, b) => a.id - b.id);
         }
+
+        console.log(items);
     }
 
     onMount(async () => {
         refresh();
     });
     let sync_event_notifier_initizalized = false;
+    let refresh_event_notifier_initizalized = false;
+ 
+    let usr = refresh_event_notifier.subscribe((value) => {
+        if (!refresh_event_notifier_initizalized) {
+            refresh_event_notifier_initizalized = true;
+            return;
+        }
+        refresh();
+        tag = "";
+    });
 
-    let us = sync_event_notifier.subscribe((event1) => {
+    let uss = sync_event_notifier.subscribe((event1) => {
         if (!sync_event_notifier_initizalized) {
             sync_event_notifier_initizalized = true;
-        } else {
-            refresh();
+            return;
         }
+        refresh();
     });
 
     onDestroy(() => {
-        us();
+        uss();
+        usr();
     });
+
+    function handleInput() {
+        if (usage === Usage.text2img_positive) {
+            text2img_positive_tags_input.set(tag);
+        } else if (usage === Usage.img2img_positive) {
+            img2img_positive_tags_input.set(tag);
+        } else if (usage === Usage.text2img_negative) {
+            text2img_negative_tags_input.set(tag);
+        } else if (usage === Usage.img2img_negative) {
+            img2img_negative_tags_input.set(tag);
+        }
+    }
 
     let layoutElement;
 
@@ -119,20 +180,33 @@
         tags = e.detail.items.map((item) => item.tag);
         items = e.detail.items;
 
-        if (use_way === "text2img") {
-            let _tags: Array<Tag> = $text2img_tags;
+        if (usage === Usage.text2img_positive) {
+            let _tags: Array<Tag> = $text2img_positive_tags;
             _tags.forEach((tag) => {
                 tag.order = items.findIndex((item) => item.tag === tag.name);
             });
-            text2img_tags.set(_tags);
-        } else {
-            let _tags: Array<Tag> = $img2img_tags;
+            text2img_positive_tags.set(_tags);
+        } else if (usage === Usage.img2img_positive) {
+            let _tags: Array<Tag> = $img2img_positive_tags;
             _tags.forEach((tag) => {
                 tag.order = items.findIndex((item) => item.tag === tag.name);
             });
-            img2img_tags.set(_tags);
+            img2img_positive_tags.set(_tags);
+        } else if (usage === Usage.text2img_negative) {
+            let _tags: Array<Tag> = $text2img_negative_tags;
+            _tags.forEach((tag) => {
+                tag.order = items.findIndex((item) => item.tag === tag.name);
+            });
+            text2img_negative_tags.set(_tags);
+        } else if (usage === Usage.img2img_negative) {
+            let _tags: Array<Tag> = $img2img_negative_tags;
+            _tags.forEach((tag) => {
+                tag.order = items.findIndex((item) => item.tag === tag.name);
+            });
+            img2img_negative_tags.set(_tags);
         }
     }
+
     function handleKeydown(e) {
         const currentTag = e.target.value;
 
@@ -163,6 +237,15 @@
             addKeys.forEach(function (key) {
                 if (key === e.keyCode) {
                     if (currentTag) e.preventDefault();
+                    if (usage === Usage.text2img_positive) {
+                        text2img_positive_tags_input.set("");
+                    } else if (usage === Usage.img2img_positive) {
+                        img2img_positive_tags_input.set("");
+                    } else if (usage === Usage.text2img_negative) {
+                        text2img_negative_tags_input.set("");
+                    } else if (usage === Usage.img2img_negative) {
+                        img2img_negative_tags_input.set("");
+                    }
 
                     /* switch (input.keyCode) {
                 case 9:
@@ -266,16 +349,30 @@
             placeholder = "";
         }
 
-        items = tags.map((tag) => ({ id: tags.indexOf(tag), tag: tag, remove_selected: false, focus_selected: false }));
+        items = tags.map((tag) => ({
+            id: tags.indexOf(tag),
+            tag: tag,
+            remove_selected: false,
+            focus_selected: false,
+        }));
 
-
-        if (use_way === "text2img") {
-            text2img_tags.update((tags) => [
+        if (usage === Usage.text2img_positive) {
+            text2img_positive_tags.update((tags) => [
                 ...tags,
                 new Tag(currentTag, currentTag, true, 1, tags.length),
             ]);
-        } else {
-            img2img_tags.update((tags) => [
+        } else if (usage === Usage.img2img_positive) {
+            img2img_positive_tags.update((tags) => [
+                ...tags,
+                new Tag(currentTag, currentTag, true, 1, tags.length),
+            ]);
+        } else if (usage === Usage.text2img_negative) {
+            text2img_negative_tags.update((tags) => [
+                ...tags,
+                new Tag(currentTag, currentTag, true, 1, tags.length),
+            ]);
+        } else if (usage === Usage.img2img_negative) {
+            img2img_negative_tags.update((tags) => [
                 ...tags,
                 new Tag(currentTag, currentTag, true, 1, tags.length),
             ]);
@@ -285,12 +382,20 @@
     function removeTag(i) {
         tags.splice(i, 1);
         items = items.filter((item) => item.id !== i);
-        if (use_way === "text2img") {
-            text2img_tags.update((tags) =>
+        if (usage === Usage.text2img_positive) {
+            text2img_positive_tags.update((tags) =>
                 tags.filter((tag) => tag.order !== i)
             );
-        } else {
-            img2img_tags.update((tags) =>
+        } else if (usage === Usage.img2img_positive) {
+            img2img_positive_tags.update((tags) =>
+                tags.filter((tag) => tag.order !== i)
+            );
+        } else if (usage === Usage.text2img_negative) {
+            text2img_negative_tags.update((tags) =>
+                tags.filter((tag) => tag.order !== i)
+            );
+        } else if (usage === Usage.img2img_negative) {
+            img2img_negative_tags.update((tags) =>
                 tags.filter((tag) => tag.order !== i)
             );
         }
@@ -494,7 +599,9 @@
                 <div
                     class="svelte-tags-input-tag"
                     animate:flip={{ duration: flipDurationMs }}
-                    style="{item.remove_selected ? 'background-color: #ff0066; color: #000000;' : ''}"
+                    style={item.remove_selected
+                        ? "background-color: #ff0066; color: #000000;"
+                        : ""}
                 >
                     {#if typeof item.tag === "string"}
                         {item.tag}
@@ -525,6 +632,7 @@
         on:focus={onFocus}
         on:blur={(e) => onBlur(e, tag)}
         on:pointerdown={onClick}
+        on:input={handleInput}
         class="svelte-tags-input"
         {placeholder}
         disabled={disable}

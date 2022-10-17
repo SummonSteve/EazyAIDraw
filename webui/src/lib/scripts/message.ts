@@ -30,10 +30,6 @@ function addMessage(msg: string, type: messageType, timeout: number) {
     });
 }
 
-function addTestMessage() {
-    addMessage("Test message", messageType.info, 5000);
-}
-
 function clearMessage() {
     message.set([]);
 }

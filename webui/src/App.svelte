@@ -10,7 +10,7 @@
   });
 </script>
 
-<div class="flex">
+<div class="">
   <Main />
   <Sidebar />
   <Notification />
