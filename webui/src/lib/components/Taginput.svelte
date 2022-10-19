@@ -1,4 +1,7 @@
 <script>
+// @ts-nocheck
+
+    import { createEventDispatcher } from "svelte"
     import { syncTags, Usage } from "../scripts/state";
     import { parsePromptString } from "../scripts/tools";
     import Tags from "./Tags.svelte";
@@ -15,6 +18,13 @@
     import { addMessage, messageType } from "../scripts/message";
     let tag = "";
     export let usage;
+
+    const dispatch = createEventDispatcher();
+
+    function handleTagClick(e) {
+        dispatch("tagclick", e.detail);
+    }
+
     function handleTags(event) {
         tag = event.detail.tags;
     }
@@ -61,9 +71,11 @@
     };
 </script>
 
-<div class="m-4 custom-tag max-w-2xl">
-    <Tags on:tags={handleTags} autoCompleteKey={"name"} {usage} />
-    <div class="mt-2 inline-block">
+<div class="m-4 custom-tag flex flex-row">
+    <div class=" basis-[70%]">
+        <Tags on:tags={handleTags} on:tagClick={handleTagClick} autoCompleteKey={"name"} usage={usage} />
+    </div>
+    <div class="ml-2">
         <button
             disabled={sync_button_disable()}
             class={sync_button_disable()

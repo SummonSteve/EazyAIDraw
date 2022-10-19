@@ -109,8 +109,9 @@ export function parsePromptString(usage: Usage) {
 // in this case, the weight of cat is 1, happy is -0.2, cute is -0.3
 const re_match_number = /(-?\d+(?:\.\d+)?)/g;
 
-function parseTag(tag_str: string, id: number): Tag {
+export function parseTag(tag_str: string, id: number): Tag {
     let tag = new Tag("", "", true, 1, id);
+    tag.raw = tag_str;
     if (tag_str.includes("{")) {
         tag.tag_type = TagType.NAI;
         tag.weight_multiplier = tag_str.split("{").length - 1;
@@ -131,7 +132,7 @@ function parseTag(tag_str: string, id: number): Tag {
         } else if (colon_count === 0) {
             tag.name = [...tag_str].filter(char => !["{", "}"].includes(char)).join("")
             tag.value.push(tag.name);
-            tag.weights.push(Math.pow(1.05, tag.weight_multiplier));
+            tag.weights.push(1);
         }
 
     } else if (tag_str.includes("(")) {
@@ -154,7 +155,7 @@ function parseTag(tag_str: string, id: number): Tag {
         } else if (!tag_str.includes(":")) {
             tag.name = [...tag_str].filter(char => !["(", ")"].includes(char)).join("")
             tag.value.push(tag.name);
-            tag.weights = [Math.pow(1.1, bracket_count)];
+            tag.weights.push(1);
         }
     } else if (tag_str.includes("[")) {
         let square_bracket_count = tag_str.split("[").length - 1;
@@ -172,11 +173,12 @@ function parseTag(tag_str: string, id: number): Tag {
         if (colon_count === 0) {
             tag.name = [...tag_str].filter(char => !["[", "]"].includes(char)).join("")
             tag.value.push(tag.name)
-            tag.weight_multiplier =10/11;
+            tag.weights.push(10/11);
         }
     } else {
         tag.name = tag_str.trim()
         tag.value.push(tag_str.trim());
+        tag.weights.push(1);
     }
 
     if (tag.value.length !== 1) {

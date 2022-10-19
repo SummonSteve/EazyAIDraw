@@ -29,9 +29,9 @@
 </div>
 
 <div
-  class="fixed top-0 left-16 h-16 w-screen m-0 flex flex-row bg-blue-300 text-gray-600 shadow-lg"
+  class="fixed top-0 left-16 h-16 w-screen m-0 bg-blue-300 text-gray-600 shadow-lg"
 >
-  <Group variant="unelevated" class="flex m-3 w-1/2">
+  <Group variant="unelevated" class="m-3 w-1/2">
     <Button
       on:click={() => {
         transitionTo("first")
@@ -43,7 +43,7 @@
         ? "width: 60%;"
         : "width: 20%; transition: width 0.2s;"}
     >
-      <Label>图片转图片</Label>
+      <Label>IMG2IMG</Label>
     </Button>
     <Button
       on:click={() => {
@@ -56,7 +56,7 @@
         ? "width: 60%;"
         : "width: 20%; transition: width 0.2s;"}
     >
-      <Label>文字转图片</Label>
+      <Label>TEXT2IMG</Label>
     </Button>
     <Button
       on:click={() => {
@@ -69,7 +69,7 @@
         ? "width: 60%;"
         : "width: 20%; transition: width 0.2s;"}
     >
-      <Label>图片放大</Label>
+      <Label>UPSCALEING</Label>
     </Button>
   </Group>
 </div>

@@ -1,10 +1,7 @@
 <script lang="ts">
     import FaTimes from "svelte-icons/fa/FaTimes.svelte";
-    import {
-        message,
-        addMessage,
-        Message,
-    } from "../scripts/message";
+    import { each } from "svelte/internal";
+    import { message, addMessage, Message } from "../scripts/message";
 
     let msg: Message;
     let initialized = false;
@@ -29,7 +26,9 @@
         if (!initialized) {
             messageArray = [];
             initialized = true;
+            return;
         }
+        msg.text = msg.text[0].split("\n");
         messageArray = [...messageArray, msg];
         timeoutOutDict[msg.id] = setTimeout(hideMessage, msg.timeout, msg.id);
         checkShowen();
@@ -38,7 +37,6 @@
     function messageHover(id) {
         clearTimeout(timeoutOutDict[id]);
     }
-
 </script>
 
 {#each messageArray as msg, i}
@@ -52,10 +50,17 @@
         style="top: {i * 80}px;"
         on:mouseover|once={() => messageHover(msg.id)}
     >
-        <span class="text mr-12">{msg.text}</span>
+        <div class="flex flex-col mr-10">
+            {#each msg.text as text, i}
+                <div class="text">
+                    {msg.text[i]}
+                </div>
+            {/each}
+        </div>
+
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <span
-            class="absolute h-[72px] top-0 right-0 bg-yellow-400 pt-6 pb-6 pl-4 pr-3 shadow-sm hover:bg-red-500 hover:text-white rounded-lg transition-all duration-200 ease-in-out cursor-pointer"
+            class="absolute h-full top-0 right-0 bg-yellow-400 pt-6 pb-6 pl-4 pr-3 shadow-sm hover:bg-red-500 hover:text-white rounded-lg transition-all duration-200 ease-in-out cursor-pointer"
             on:click={() => {
                 hideMessage(msg.id);
             }}
@@ -96,7 +101,8 @@
         animation: hide_slide 0.8s ease-in-out forwards;
     }
 
-    .text{
+    .text {
         font-size: 1.2rem;
+        font-family: "Noto Sans SC", sans-serif;
     }
 </style>

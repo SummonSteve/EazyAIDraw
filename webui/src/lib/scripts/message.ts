@@ -9,13 +9,13 @@ enum messageType{
 class Message {
     id: number;
     type: messageType;
-    text: string;
+    text: string[];
     timeout: number;
     show: boolean;
     constructor(type: messageType, text: string, timeout: number){
         this.id = Math.floor(Math.random() * 1000000);
         this.type = type;
-        this.text = text;
+        this.text = [text];
         this.timeout = timeout;
         this.show = true;
     }
@@ -35,4 +35,4 @@ function clearMessage() {
 }
 
 
-export {addMessage, clearMessage, Message, messageType, addTestMessage};
+export {addMessage, clearMessage, Message, messageType};

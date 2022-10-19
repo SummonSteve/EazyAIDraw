@@ -36,15 +36,17 @@ export class Tag {
     public weight_multiplier: number;
     public fadeparam: FadeParam;
     public tag_type: TagType;
+    public raw: string;
     constructor(name: string, value: string, name_is_value: boolean, weight: number, order: number){
         this.name = name;
         this.value = value === "" ? [] : [value];
         this.name_is_value = name_is_value;
         this.weights = weight === 1 ? [] : [weight];
-        this.weight_multiplier = 1;
+        this.weight_multiplier = 0;
         this.order = order;
         this.fadeparam = new FadeParam("", "", 0);
         this.tag_type = TagType.SD;
+        this.raw = "";
     }
 }
 export const img2img_positive_tags_input = writable("");

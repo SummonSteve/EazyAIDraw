@@ -1,6 +1,6 @@
 <script lang="ts">
-
-    import { createEventDispatcher, onDestroy } from "svelte";
+    // @ts-nocheck
+    import { createEventDispatcher, onDestroy, afterUpdate } from "svelte";
     import { dndzone } from "svelte-dnd-action";
     import { flip } from "svelte/animate";
     import {
@@ -19,6 +19,8 @@
     import { onMount } from "svelte";
     import { addMessage, messageType } from "../scripts/message";
     import { refresh_event_notifier } from "../scripts/tools";
+    import { parseTag } from "../scripts/tools";
+    import { set_input_value } from "svelte/internal";
 
     const flipDurationMs = 200;
 
@@ -52,12 +54,20 @@
     export let onlyAutocomplete;
     export let labelText;
     export let labelShow;
-    export let items;
+    export let items: [
+        {
+            id: number;
+            tag: string;
+            remove_selected: boolean;
+            focus_selected: boolean;
+        }
+    ];
     export let usage: Usage;
+
+    let input: HTMLInputElement;
 
     function refresh() {
         if (usage === Usage.text2img_positive) {
-            
             tags = $text2img_positive_tags.map((tag) => tag.name);
             items = $text2img_positive_tags
                 .map((tag: Tag) => ({
@@ -107,7 +117,7 @@
     });
     let sync_event_notifier_initizalized = false;
     let refresh_event_notifier_initizalized = false;
- 
+
     let usr = refresh_event_notifier.subscribe((value) => {
         if (!refresh_event_notifier_initizalized) {
             refresh_event_notifier_initizalized = true;
@@ -207,15 +217,58 @@
         }
     }
 
+    let update_pointer = false;
+    let pointer_position = 0;
+
+    afterUpdate(() => {
+        if (tag.includes("（") || tag.includes("）")) {
+            addMessage(
+                "注意：输入包含中文括号 asdasdsadasdasdsadsadas",
+                messageType.warning,
+                5000
+            );
+        }
+        if (update_pointer) {
+            input.setSelectionRange(pointer_position + 1, pointer_position + 1);
+            update_pointer = false;
+        }
+    });
+
     function handleKeydown(e) {
         const currentTag = e.target.value;
+
+        // if left bracket
+        if (e.keyCode === 57 && e.shiftKey) {
+            e.preventDefault();
+            pointer_position = input.selectionStart;
+            let left = tag.slice(0, pointer_position);
+            let right = tag.slice(pointer_position);
+            tag = left + "()" + right;
+            update_pointer = true;
+        }
+        if (e.keyCode === 219 && !e.shiftKey) {
+            e.preventDefault();
+            pointer_position = input.selectionStart;
+            let left = tag.slice(0, pointer_position);
+            let right = tag.slice(pointer_position);
+            tag = left + "[]" + right;
+            update_pointer = true;
+        }
+        if (e.keyCode === 219 && e.shiftKey) {
+            e.preventDefault();
+            pointer_position = input.selectionStart;
+            let left = tag.slice(0, pointer_position);
+            let right = tag.slice(pointer_position);
+            tag = left + "{}" + right;
+            update_pointer = true;
+        }
 
         if (removeKeys) {
             if (removeKeys.includes(e.keyCode) && tags.length > 0) {
                 if (currentTag.length === 0) {
                     let tag_to_remove = items[items.length - 1];
                     if (tag_to_remove.remove_selected) {
-                        removeTag(items[items.length - 1].id);
+                        removeTag(items[items.length - 1]);
                         dispatch("tags", {
                             tags: tags,
                         });
@@ -224,6 +277,8 @@
                         items[items.length - 1].remove_selected = true;
                         tag_to_remove.remove_selected = true;
                     }
+                } else {
+                    //if (tag[tag.length - 1])
                 }
             }
         }
@@ -330,7 +385,9 @@
         if (onlyUnique && tags.includes(currentTag)) return;
         if (onlyAutocomplete && arrelementsmatch.length === 0) return;
 
-        tags.push(currentObjTags ? currentObjTags : currentTag);
+        let _tag = parseTag(currentTag, items.length);
+
+        tags.push(currentObjTags ? currentObjTags : _tag.name);
         tags = tags;
         tag = "";
 
@@ -357,47 +414,61 @@
         }));
 
         if (usage === Usage.text2img_positive) {
-            text2img_positive_tags.update((tags) => [
-                ...tags,
-                new Tag(currentTag, currentTag, true, 1, tags.length),
-            ]);
+            text2img_positive_tags.update((tags) => [...tags, _tag]);
         } else if (usage === Usage.img2img_positive) {
-            img2img_positive_tags.update((tags) => [
-                ...tags,
-                new Tag(currentTag, currentTag, true, 1, tags.length),
-            ]);
+            img2img_positive_tags.update((tags) => [...tags, _tag]);
         } else if (usage === Usage.text2img_negative) {
-            text2img_negative_tags.update((tags) => [
-                ...tags,
-                new Tag(currentTag, currentTag, true, 1, tags.length),
-            ]);
+            text2img_negative_tags.update((tags) => [...tags, _tag]);
         } else if (usage === Usage.img2img_negative) {
-            img2img_negative_tags.update((tags) => [
-                ...tags,
-                new Tag(currentTag, currentTag, true, 1, tags.length),
-            ]);
+            img2img_negative_tags.update((tags) => [...tags, _tag]);
         }
     }
 
-    function removeTag(i) {
-        tags.splice(i, 1);
-        items = items.filter((item) => item.id !== i);
+    function removeTag(item) {
+        tags.splice(item.id, 1);
+        let index = items.indexOf(item);
+        items.splice(index, 1);
+        items = items;
         if (usage === Usage.text2img_positive) {
-            text2img_positive_tags.update((tags) =>
-                tags.filter((tag) => tag.order !== i)
-            );
+            text2img_positive_tags.update((tags: Array<Tag>) => {
+                tags = tags.filter((tag) => tag.order !== index);
+                tags.forEach((tag) => {
+                    if (tag.order > index) {
+                        tag.order = tag.order - 1;
+                    }
+                });
+                return tags;
+            });
         } else if (usage === Usage.img2img_positive) {
-            img2img_positive_tags.update((tags) =>
-                tags.filter((tag) => tag.order !== i)
-            );
+            img2img_positive_tags.update((tags: Array<Tag>) => {
+                tags = tags.filter((tag) => tag.order !== index);
+                tags.forEach((tag) => {
+                    if (tag.order > index) {
+                        tag.order = tag.order - 1;
+                    }
+                });
+                return tags;
+            });
         } else if (usage === Usage.text2img_negative) {
-            text2img_negative_tags.update((tags) =>
-                tags.filter((tag) => tag.order !== i)
-            );
+            text2img_negative_tags.update((tags: Array<Tag>) => {
+                tags = tags.filter((tag) => tag.order !== index);
+                tags.forEach((tag) => {
+                    if (tag.order > index) {
+                        tag.order = tag.order - 1;
+                    }
+                });
+                return tags;
+            });
         } else if (usage === Usage.img2img_negative) {
-            img2img_negative_tags.update((tags) =>
-                tags.filter((tag) => tag.order !== i)
-            );
+            img2img_negative_tags.update((tags: Array<Tag>) => {
+                tags = tags.filter((tag) => tag.order !== index);
+                tags.forEach((tag) => {
+                    if (tag.order > index) {
+                        tag.order = tag.order - 1;
+                    }
+                });
+                return tags;
+            });
         }
 
         dispatch("tags", {
@@ -406,10 +477,10 @@
 
         // Hide autocomplete list
         // Focus on svelte tags input
-        arrelementsmatch = [];
-        document.getElementById(id).readOnly = false;
-        placeholder = storePlaceholder;
-        document.getElementById(id).focus();
+        // arrelementsmatch = [];
+        // document.getElementById(id).readOnly = false;
+        // placeholder = storePlaceholder;
+        // document.getElementById(id).focus();
     }
 
     function onPaste(e) {
@@ -454,12 +525,12 @@
     function onClick() {
         items.forEach((item) => (item.remove_selected = false));
         items = items;
-        (!minChars || minChars == 0) && getMatchElements();
+        (!minChars || minChars == 0) && getMatchElements(0); // confused
     }
 
     function getClipboardData(e) {
-        if (window.clipboardData) {
-            return window.clipboardData.getData("Text");
+        if (window.Clipboard) {
+            return window.Clipboard.toString();
         }
 
         if (e.clipboardData) {
@@ -579,6 +650,25 @@
     function uniqueID() {
         return "sti_" + Math.random().toString(36).substring(2, 11);
     }
+
+    function handleTagClick(item: {
+        id: number;
+        tag: string;
+        remove_selected: boolean;
+        focus_selected: boolean;
+    }) {
+        items.forEach((_item) => {
+            if (_item.focus_selected) {
+                _item.focus_selected = false;
+            }
+
+            if (_item.id === item.id) {
+                _item.focus_selected = !_item.focus_selected;
+            }
+        });
+        items = items;
+        dispatch("tagClick", items.indexOf(item));
+    }
 </script>
 
 <div
@@ -599,9 +689,17 @@
                 <div
                     class="svelte-tags-input-tag"
                     animate:flip={{ duration: flipDurationMs }}
-                    style={item.remove_selected
-                        ? "background-color: #ff0066; color: #000000;"
-                        : ""}
+                    style={(item.focus_selected
+                        ? "background-color: #0090e3; color: #ffffff; "
+                        : "") +
+                        (item.remove_selected
+                            ? "background-color: #ff0066; color: #000000;"
+                            : "")}
+                    on:click={() => {
+                        console.log(item);
+                        handleTagClick(item);
+                    }}
+                    on:keypress={() => {}}
                 >
                     {#if typeof item.tag === "string"}
                         {item.tag}
@@ -609,9 +707,10 @@
                         {item.tag[autoCompleteKey]}
                     {/if}
                     {#if !disable}
+                        <!-- svelte-ignore a11y-click-events-have-key-events -->
                         <span
                             class="svelte-tags-input-tag-remove"
-                            on:pointerdown={() => removeTag(item.id)}
+                            on:click|stopPropagation={() => removeTag(item)}
                         >
                             &#215;</span
                         >
@@ -625,6 +724,7 @@
         {id}
         {name}
         bind:value={tag}
+        bind:this={input}
         on:keydown={handleKeydown}
         on:keyup={getMatchElements}
         on:paste={onPaste}
@@ -663,9 +763,7 @@
     .svelte-tags-input-tag,
     .svelte-tags-input-matchs,
     .svelte-tags-input-layout label {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-            Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
-            "Helvetica Neue", sans-serif;
+        font-family: "Fira Mono", monospace, "Noto Sans SC", sans-serif;
         font-size: 14px;
         padding: 2px 5px;
     }
