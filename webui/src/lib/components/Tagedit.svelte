@@ -51,146 +51,148 @@
             {/if}
         </div>
     </div>
-    <div class="flex flex-row">
-        <div class="basis-[85%]">
-            <Textfield
-                class="shaped-filled w-full"
-                variant="filled"
-                bind:value={local_tag.name}
-                label={tag.name}
-            >
-                <HelperText slot="helper"
-                    >Change tag name have no effect on the tag value itself. Plz
-                    change value</HelperText
-                >
-            </Textfield>
-        </div>
-        <div class="basis-[15%]">
-            <Button
-                class="w-full m-2"
-                on:click={() => {}}
-                touch
-                variant="raised"
-            >
-                <Label>Save</Label>
-            </Button>
-        </div>
-    </div>
-
-    {#if tag.fadeparam.steps !== 0}
-        <Textfield
-            class="shaped-filled w-full"
-            variant="filled"
-            bind:value={local_tag.fadeparam._new}
-            label={tag.fadeparam._new}
-        >
-            <HelperText slot="helper">New prompt</HelperText>
-        </Textfield>
-        <Textfield
-            class="shaped-filled w-full"
-            variant="filled"
-            bind:value={local_tag.fadeparam.old}
-            label={tag.fadeparam.old}
-        >
-            <HelperText slot="helper">Prompt to replace</HelperText>
-        </Textfield>
-        <div class="filled">
-            Replace [{tag.fadeparam.old}] by [{tag.fadeparam._new}] at step:[ {local_tag
-                .fadeparam.steps} ]
-        </div>
-        <Slider
-            bind:value={local_tag.fadeparam.steps}
-            min={0}
-            max={100}
-            step={1}
-        />
-    {/if}
-
-    {#each tag.value as value, i}
+    <div class=" bg-slate-300 p-4 rounded-xl">
         <div class="flex flex-row">
-            <div class="basis-3/4">
+            <div class="basis-[85%]">
                 <Textfield
                     class="shaped-filled w-full"
                     variant="filled"
-                    bind:value={local_value[i]}
-                    label={tag.value[i]}
-                >
-                    <HelperText slot="helper">Tag Value</HelperText>
-                </Textfield>
-            </div>
-            <div class="basis-1/4">
-                <Textfield
-                    class="shaped-filled w-full ml-2"
-                    variant="filled"
-                    bind:value={local_value[i]}
-                    label={tag.weights[i].toString()}
+                    bind:value={local_tag.name}
+                    label={tag.name}
                 >
                     <HelperText slot="helper"
-                        >{tag.value[i]}'s Weight</HelperText
+                        >Change tag name have no effect on the tag value itself. Plz
+                        change value</HelperText
                     >
                 </Textfield>
             </div>
+            <div class="basis-[15%]">
+                <Button
+                    class="w-full m-2"
+                    on:click={() => {}}
+                    touch
+                    variant="raised"
+                >
+                    <Label>Save</Label>
+                </Button>
+            </div>
         </div>
-    {/each}
-    <div class="flex flex-row">
-        <div class="basis-[55%] mt-1">
+    
+        {#if tag.fadeparam.steps !== 0}
             <Textfield
                 class="shaped-filled w-full"
                 variant="filled"
-                bind:value={local_tag.order}
-                label="Order in queue"
+                bind:value={local_tag.fadeparam._new}
+                label={tag.fadeparam._new}
             >
-                <HelperText slot="helper">Position in queue</HelperText>
+                <HelperText slot="helper">New prompt</HelperText>
             </Textfield>
-        </div>
-        <div class="basis-[45%] ml-4">
-            <div class="eng text-sm h-fit">tag type</div>
-            <SegmentedButton
-                segments={tag_types}
-                let:segment
-                singleSelect
-                bind:selected
-            >
-                <Segment {segment} on:click$preventDefault={() => {}}>
-                    <Label>{segment}</Label>
-                </Segment>
-            </SegmentedButton>
-        </div>
-    </div>
-
-    <div class="flex flex-row">
-        <div class="basis-1/4">
             <Textfield
                 class="shaped-filled w-full"
                 variant="filled"
-                bind:value={local_tag.weight_multiplier}
-                label="Weight Multiplier"
+                bind:value={local_tag.fadeparam.old}
+                label={tag.fadeparam.old}
             >
-                <HelperText slot="helper" />
+                <HelperText slot="helper">Prompt to replace</HelperText>
             </Textfield>
-        </div>
-        <div class="basis-3/4 mt-1">
+            <div class="filled">
+                Replace [{tag.fadeparam.old}] by [{tag.fadeparam._new}] at step:[ {local_tag
+                    .fadeparam.steps} ]
+            </div>
             <Slider
-                bind:value={local_tag.weight_multiplier}
+                bind:value={local_tag.fadeparam.steps}
                 min={0}
-                max={10}
+                max={100}
                 step={1}
             />
-        </div>
-    </div>
-
-    <div class="eng text-sm">
-        Preview:
-    </div>
-
-    <div class="card-container">
-        <Card>
-            <PrimaryAction on:click={() => {}} padded>
-                <div class="title text-center">
-                    {tag.raw}
+        {/if}
+    
+        {#each tag.value as value, i}
+            <div class="flex flex-row">
+                <div class="basis-3/4">
+                    <Textfield
+                        class="shaped-filled w-full"
+                        variant="filled"
+                        bind:value={local_value[i]}
+                        label={tag.value[i]}
+                    >
+                        <HelperText slot="helper">Tag Value</HelperText>
+                    </Textfield>
                 </div>
-            </PrimaryAction>
-        </Card>
+                <div class="basis-1/4">
+                    <Textfield
+                        class="shaped-filled w-full ml-2"
+                        variant="filled"
+                        bind:value={local_value[i]}
+                        label={tag.weights[i].toString()}
+                    >
+                        <HelperText slot="helper"
+                            >{tag.value[i]}'s Weight</HelperText
+                        >
+                    </Textfield>
+                </div>
+            </div>
+        {/each}
+        <div class="flex flex-row">
+            <div class="basis-[55%] mt-1">
+                <Textfield
+                    class="shaped-filled w-full"
+                    variant="filled"
+                    bind:value={local_tag.order}
+                    label="Order in queue"
+                >
+                    <HelperText slot="helper">Position in queue</HelperText>
+                </Textfield>
+            </div>
+            <div class="basis-[45%] ml-4">
+                <div class="eng text-sm h-fit">tag type</div>
+                <SegmentedButton
+                    segments={tag_types}
+                    let:segment
+                    singleSelect
+                    bind:selected
+                >
+                    <Segment {segment} on:click$preventDefault={() => {}}>
+                        <Label>{segment}</Label>
+                    </Segment>
+                </SegmentedButton>
+            </div>
+        </div>
+    
+        <div class="flex flex-row">
+            <div class="basis-1/4">
+                <Textfield
+                    class="shaped-filled w-full"
+                    variant="filled"
+                    bind:value={local_tag.weight_multiplier}
+                    label="Weight Multiplier"
+                >
+                    <HelperText slot="helper" />
+                </Textfield>
+            </div>
+            <div class="basis-3/4 mt-1">
+                <Slider
+                    bind:value={local_tag.weight_multiplier}
+                    min={0}
+                    max={10}
+                    step={1}
+                />
+            </div>
+        </div>
+    
+        <div class="eng text-sm">
+            Preview:
+        </div>
+    
+        <div class="card-container">
+            <Card>
+                <PrimaryAction on:click={() => {}} padded>
+                    <div class="title text-center">
+                        {tag.raw}
+                    </div>
+                </PrimaryAction>
+            </Card>
+        </div>
     </div>
 </div>
 
