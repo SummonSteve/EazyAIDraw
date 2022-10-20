@@ -2,12 +2,14 @@ use rand::Rng;
 use reqwest::{Client, RequestBuilder};
 use serde::{Serialize, Deserialize};
 
+use crate::backapis::{backend::Backends, BackendType};
+use crate::errors::BackendError;
 use super::DrawCall;
 
-static UC_DEFAULT: &str = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry";
+static UC_DEFAULT: &str = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry,";
 
 #[derive(Serialize, Deserialize ,Debug)]
-enum StableDiffusionSampler {
+pub enum StableDiffusionSampler {
     #[serde(rename = "plms")]
     Plms,
     #[serde(rename = "ddim")]
@@ -29,18 +31,18 @@ enum StableDiffusionSampler {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GenerateStream {
-    height: i32,
-    width: i32,
-    n_samples: i32,
-    prompt: String,
-    sampler: StableDiffusionSampler,
-    scale: i32,
-    seed: u32,
-    steps: i32,
+    pub height: i32,
+    pub width: i32,
+    pub n_samples: i32,
+    pub prompt: String,
+    pub sampler: StableDiffusionSampler,
+    pub scale: i32,
+    pub seed: u32,
+    pub steps: u16,
     #[serde(rename = "uc")]
-    undesired_content: String,
-    #[serde(rename = "ucPreset")]
-    uc_preset: i32,
+    pub undesired_content: String,
+    #[serde(rename = "uc_preset")]
+    pub uc_preset: i32,
 }
 
 impl GenerateStream {
@@ -61,7 +63,12 @@ impl GenerateStream {
 }
 
 impl DrawCall for GenerateStream {
-    fn into_http_request(&self, client: &Client, api_url: String) -> RequestBuilder {
-        client.post(api_url).json(&self)
+    fn into_http_request(&self, client: &Client, backends: &Backends) -> Result<RequestBuilder, BackendError> {
+        for backend in &backends.inner {
+            if !backend.busy && backend.backend_type == BackendType::NovelAi {
+                return Ok(client.post(format!("{}/generate-stream",backend.url.to_owned())).json(&self));
+            }
+        }
+        Err(BackendError::NoAvailableBackend)
     }
 }
