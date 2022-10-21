@@ -1,6 +1,7 @@
 use rand::Rng;
 use reqwest::{Client, RequestBuilder};
 use serde::{Serialize, Deserialize};
+use tracing::log::warn;
 
 use crate::backapis::{backend::Backends, BackendType};
 use crate::errors::BackendError;
@@ -31,6 +32,7 @@ pub enum StableDiffusionSampler {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GenerateStream {
+    pub id: i64,
     pub height: i32,
     pub width: i32,
     pub n_samples: i32,
@@ -48,6 +50,7 @@ pub struct GenerateStream {
 impl GenerateStream {
     pub fn new(prompt: String) -> Self {
         Self {
+            id: 0,
             height: 768,
             width: 512,
             n_samples: 1,
@@ -63,9 +66,10 @@ impl GenerateStream {
 }
 
 impl DrawCall for GenerateStream {
-    fn into_http_request(&self, client: &Client, backends: &Backends) -> Result<RequestBuilder, BackendError> {
-        for backend in &backends.inner {
+    fn into_http_request(&self, client: &Client, backends: &mut Backends) -> Result<RequestBuilder, BackendError> {
+        for backend in &mut backends.inner {
             if !backend.busy && backend.backend_type == BackendType::NovelAi {
+                backend.busy = true;
                 return Ok(client.post(format!("{}/generate-stream",backend.url.to_owned())).json(&self));
             }
         }

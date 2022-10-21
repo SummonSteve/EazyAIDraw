@@ -8,9 +8,9 @@ use std::{
 };
 use tokio::{net::{TcpListener, TcpStream}, time};
 use tokio_tungstenite::tungstenite::protocol::Message;
-use tracing::{info, error, warn};
+use tracing::{info, error, warn, debug};
 use uuid::Uuid;
-use crate::backapis::DrawTask;
+use crate::backapis::{DrawTask, TaskMessage};
 
 use super::handler::Handler as InnerHandler;
 
@@ -18,11 +18,11 @@ type PeerMap = Arc<Mutex<DashMap<SocketAddr, (Uuid, Sender<Message>)>>>;
 
 pub struct Handler {
     peer_map: PeerMap,
-    task_sender: Sender<DrawTask>
+    task_sender: Sender<TaskMessage>
 }
 
 impl Handler {
-    pub fn new(tx: Sender<DrawTask>) -> Self {
+    pub fn new(tx: Sender<TaskMessage>) -> Self {
         Self {
             peer_map: Arc::new(Mutex::new(DashMap::new())),
             task_sender: tx,
@@ -52,7 +52,7 @@ async fn handle_connection (
     peer_map: PeerMap,
     stream: TcpStream,
     addr: SocketAddr,
-    task_sender: Sender<DrawTask>
+    task_sender: Sender<TaskMessage>
 ) -> Result<()> {
     info!("Incoming TCP connection from: {}", addr);
     let ws_stream = tokio_tungstenite::accept_async(stream)
@@ -94,6 +94,7 @@ async fn handle_connection (
                                     break;
                                 }
                                 _ =>{
+                                    debug!("get message {}", addr);
                                     *last_time.lock().unwrap() = time::Instant::now();
                                     inner_handler.handle_packet(packet, tx.clone()).await?
                                 }
@@ -109,8 +110,8 @@ async fn handle_connection (
             }
             _ = interval.tick() => {
                 if last_time.lock().unwrap().elapsed() > timeout_duration {
-                    peer_map.lock().unwrap().remove(&addr);
-                    warn!("Client {} is not responding, closing connection", addr);
+                    //peer_map.lock().unwrap().remove(&addr);
+                    //warn!("Client {} is not responding, closing connection", addr);
                     //break;
                 }
             }

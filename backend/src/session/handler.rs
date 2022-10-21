@@ -4,6 +4,7 @@ use sea_orm::{ConnectionTrait, Statement, EntityTrait, DatabaseConnection};
 use tokio_tungstenite::tungstenite::Message;
 use crossbeam::channel::Sender;
 use tracing::{info, warn, error};
+use crate::backapis::TaskMessage;
 use crate::backapis::{scheduler::TaskScheduler, DrawTask};
 use crate::glob::DB;
 use crate::session::packets::draw_call::handle_draw_call;
@@ -14,11 +15,11 @@ use super::packets::IncomePacket;
 
 pub struct Handler {
     db: Arc<DatabaseConnection>,
-    task_sender: Sender<DrawTask>,
+    task_sender: Sender<TaskMessage>,
 }
 
 impl Handler {
-    pub fn new(task_sender: Sender<DrawTask>) -> Self {
+    pub fn new(task_sender: Sender<TaskMessage>) -> Self {
         Self {
             db: DB.clone(),
             task_sender,
@@ -45,6 +46,12 @@ impl Handler {
                             Statement::from_string(sea_orm::DatabaseBackend::Postgres, "SELECT 1".to_string()))
                                 .await;
                         warn!("Database ping {:?}", res);
+                        Ok(())
+                    }
+
+                    IncomePacket::BackendPostProgress(progress) => {
+                        let tx = self.task_sender.clone();
+                        tx.send(TaskMessage::TaskSyncStatus(progress)).unwrap();
                         Ok(())
                     }
 

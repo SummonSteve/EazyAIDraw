@@ -13,7 +13,7 @@ mod errors;
 
 use glob::{DB};
 use session::websocket::Handler;
-use backapis::{scheduler::TaskScheduler, DrawTask};
+use backapis::{scheduler::TaskScheduler, DrawTask, TaskMessage};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
             .await.unwrap();
     });
 
-    let (task_tx, task_rx) = crossbeam::channel::unbounded::<DrawTask>();
+    let (task_tx, task_rx) = crossbeam::channel::unbounded::<TaskMessage>();
 
     TaskScheduler::new(task_rx).start()?;
 

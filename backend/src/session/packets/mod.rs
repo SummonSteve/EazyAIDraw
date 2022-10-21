@@ -23,9 +23,17 @@ pub enum IncomePacket {
     DrawCall(DrawCallType),
     #[serde(rename = "database_ping")]
     DatabasePing,
+    #[serde(rename = "backend_post_progress")]
+    BackendPostProgress(BackendProgress),
 }
 
 
+#[derive(Serialize, Deserialize ,Debug)]
+pub struct BackendProgress{
+    pub id: i64,
+    pub current: u16,
+    pub total: u16
+}
 
 
 #[derive(Serialize, Deserialize ,Debug)]

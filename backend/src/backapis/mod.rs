@@ -1,11 +1,14 @@
 pub mod structures;
 pub mod scheduler;
 pub mod backend;
+pub mod request_executor;
 
 
 use crossbeam::channel::{unbounded, Sender, Receiver};
 use tokio_tungstenite::tungstenite::Message;
 
+
+use crate::session::packets::BackendProgress;
 
 use self::structures::DrawCall;
 #[derive(PartialEq, Eq)]
@@ -13,6 +16,11 @@ pub enum BackendType{
     NovelAi,
     // stable diffusion web ui
     Sd
+}
+
+pub enum TaskMessage {
+    TaskSyncStatus(BackendProgress),
+    Task(DrawTask),
 }
 
 pub struct DrawTask {
