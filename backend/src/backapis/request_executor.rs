@@ -56,7 +56,7 @@ async fn handle_and_send(response: Response, sender: Sender<Message>) {
 
             for img_b64 in imgs_b64 {
                 let raw_img = base64::decode(img_b64).unwrap();
-                sender.send(Message::Binary(compress_to_vec_zlib(&raw_img, 1))).unwrap();
+                sender.send(Message::Binary(compress_to_vec_zlib(&raw_img, 10))).unwrap();
             }
 
     }

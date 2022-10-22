@@ -53,6 +53,7 @@ dependencies = [
  "dashmap",
  "dotenv_codegen",
  "futures-util",
+ "indexmap",
  "miniz_oxide",
  "poem",
  "pollster",

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DrawResult {
     task_id: i64,
-    position_in_queue: i32,
+    position_in_queue: usize,
     status: TaskStatus,
 }
 
@@ -15,7 +15,7 @@ pub enum TaskStatus {
 }
 
 impl DrawResult {
-    pub fn new(task_id: i64, position_in_queue: i32, status: TaskStatus) -> Self {
+    pub fn new(task_id: i64, position_in_queue: usize, status: TaskStatus) -> Self {
         Self {
             task_id,
             position_in_queue,

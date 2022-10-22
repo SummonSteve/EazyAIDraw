@@ -68,8 +68,8 @@ impl GenerateStream {
 impl DrawCall for GenerateStream {
     fn into_http_request(&self, client: &Client, backends: &mut Backends) -> Result<RequestBuilder, BackendError> {
         for backend in &mut backends.inner {
-            if !backend.busy && backend.backend_type == BackendType::NovelAi {
-                backend.busy = true;
+            if backend.task == None && backend.backend_type == BackendType::NovelAi {
+                backend.task = Some(self.id);
                 return Ok(client.post(format!("{}/generate-stream",backend.url.to_owned())).json(&self));
             }
         }

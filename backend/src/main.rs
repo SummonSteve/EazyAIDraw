@@ -17,10 +17,7 @@ use backapis::{scheduler::TaskScheduler, DrawTask, TaskMessage};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .with_test_writer()
-        .init();
+    tracing_subscriber::fmt().init();
 
     let _db = DB.clone();
     tokio::spawn(async move {

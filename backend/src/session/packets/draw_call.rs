@@ -12,7 +12,7 @@ use crate::entities::{
 };
 
 
-pub async fn handle_draw_call(draw_call: DrawCallType, message_tx: Sender<Message>, task_tx: Sender<TaskMessage>) -> color_eyre::Result<i64>{
+pub async fn handle_draw_call(draw_call: DrawCallType, message_tx: Sender<Message>, task_tx: Sender<TaskMessage>) -> color_eyre::Result<()>{
     let new_record = <generate_stream::ActiveModel as sea_orm::ActiveModelTrait>::default();
 
     let record = new_record.insert(DB.as_ref()).await?;
@@ -26,5 +26,5 @@ pub async fn handle_draw_call(draw_call: DrawCallType, message_tx: Sender<Messag
         DrawCallType::Sd(call) => {}
     }
     
-    Ok(record.id)
+    Ok(())
 }

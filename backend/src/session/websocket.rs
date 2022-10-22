@@ -94,7 +94,6 @@ async fn handle_connection (
                                     break;
                                 }
                                 _ =>{
-                                    debug!("get message {}", addr);
                                     *last_time.lock().unwrap() = time::Instant::now();
                                     inner_handler.handle_packet(packet, tx.clone()).await?
                                 }

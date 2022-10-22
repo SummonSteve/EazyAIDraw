@@ -34,19 +34,10 @@ impl Handler {
                 match packet {
                     IncomePacket::DrawCall(draw_call) => {
                         info!("Draw call received");
-                        let task_id = handle_draw_call(draw_call, message_tx.clone(), self.task_sender.clone()).await?;
-                        let result = DrawResult::new(task_id, data.len() as i32, TaskStatus::Pending);
-                        Ok(message_tx.send(Message::Text(serde_json::to_string(&result)?))?)
+                        Ok(handle_draw_call(draw_call, message_tx.clone(), self.task_sender.clone()).await?)
                     }
                     IncomePacket::Ping => {
                         Ok(message_tx.send(Message::text("Pong"))?)
-                    }
-                    IncomePacket::DatabasePing => {
-                        let res = self.db.execute(
-                            Statement::from_string(sea_orm::DatabaseBackend::Postgres, "SELECT 1".to_string()))
-                                .await;
-                        warn!("Database ping {:?}", res);
-                        Ok(())
                     }
 
                     IncomePacket::BackendPostProgress(progress) => {

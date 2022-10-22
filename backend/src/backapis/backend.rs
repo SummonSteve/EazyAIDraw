@@ -12,13 +12,12 @@ impl Backends {
 
 pub struct Backend {
     pub backend_type: BackendType,
-    pub busy: bool,
+    pub task: Option<i64>,
     pub url: String,
 }
 
 pub struct BackendStatus {
     pub busy: bool,
-
 }
 
 
@@ -26,7 +25,7 @@ impl Backend {
     pub fn new(backend_type: BackendType, url: String) -> Self {
         Self { 
             backend_type,
-            busy: false,
+            task: None,
             url,
         }
     }
