@@ -1,39 +1,82 @@
 <script lang="ts">
-    import type { Tag, Usage } from "../scripts/state";
+    import {
+        SamplingMethods,
+        type Tag,
+        Usage,
+        sync_config,
+    } from "../scripts/state";
     import Button, { Group, Label } from "@smui/button";
     import Slider from "@smui/slider";
     import Textfield from "@smui/textfield";
-    import HelperText from "@smui/textfield/helper-text";
+    import Genbutton from "./Genbutton.svelte";
     import Switch from "@smui/switch";
-    import Chip, { Set, Text } from "@smui/chips";
+    import { onMount } from "svelte";
+    import { send } from "../scripts/main";
+    import {
+        NovelAIDrawCall,
+        NovelAISamplingMethods,
+    } from "../scripts/novelai";
+    import {
+        img2img_negative_tags,
+        img2img_positive_tags,
+        text2img_negative_tags,
+        text2img_positive_tags,
+    } from "../scripts/state";
 
-    enum sampling_methods {
-        euler_a = "Euler a",
-        euler = "Euler",
-        lms = "LMS",
-        heun = "Heun",
-        dpm2 = "DPM2",
-        dpm2a = "DPM2a",
-        dpm_fast = "DPM fast",
-        dpm_adaptive = "DPM adaptive",
-        lms_karras = "LMS Karras",
-        dpm2_karras = "DPM2 Karras",
-        dpm2a_karras = "DPM2a Karras",
-        ddim = "DDIM",
-        plms = "PLMS",
-    }
-
-    let selected_sampling = sampling_methods.euler_a;
+    let number_of_generation: number = 1;
+    let selected_sampling = SamplingMethods.euler_a;
     let width: number = 0;
     let height: number = 0;
     let cfg_scale: number = 0;
+    let steps: number = 0;
 
-    let seed: string = "-1";
+    let seed: number = -1;
+    let restore_faces: boolean = false;
+    let tiling: boolean = false;
+    let highres_fix: boolean = false;
 
-    let choices_opt = ["restore_faces", "tiling", "highres_fix"];
-    let selected = [];
+    const default_uc =
+        "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry,";
 
     export let usage: Usage;
+
+    sync_config.subscribe((cfg) => {
+        console.log("sync_config", cfg);
+        selected_sampling = cfg.sampling_method;
+        width = cfg.width;
+        height = cfg.height;
+        cfg_scale = cfg.cfg_scale;
+        seed = cfg.seed;
+        restore_faces = cfg.restore_face;
+        tiling = cfg.tiling;
+        highres_fix = cfg.highres_fix;
+        steps = cfg.steps;
+    });
+
+    function submitTask() {
+        if (usage == Usage.text2img_positive) {
+            console.log("submitting task");
+            let prompt = $text2img_positive_tags
+                .sort((a, b) => a.order - b.order)
+                .map((tag: Tag) => tag.raw)
+                .join(",");
+
+            console.log(steps);
+            let draw_call = new NovelAIDrawCall(
+                height,
+                width,
+                number_of_generation,
+                prompt,
+                selected_sampling,
+                cfg_scale,
+                seed,
+                steps,
+                default_uc,
+                0
+            );
+            send(draw_call.into_json());
+        }
+    }
 </script>
 
 <div class=" bg-slate-200 flex flex-col ml-4 mr-3 mb-5">
@@ -41,64 +84,84 @@
         <div class="eng text-sm">
             Sampling method: {selected_sampling}
         </div>
-        <Group variant="outlined" class="mt-1">
-            {#each Object.keys(sampling_methods) as method}
+        <div class="flex flex-row">
+            <div>
+                <Group variant="outlined" class="mt-1">
+                    {#each Object.keys(SamplingMethods) as method}
+                        <Button
+                            on:click={() => {
+                                selected_sampling = SamplingMethods[method];
+                            }}
+                            variant="outlined"
+                            color={selected_sampling === SamplingMethods[method]
+                                ? "primary"
+                                : "secondary"}
+                            style={selected_sampling === SamplingMethods[method]
+                                ? "background-color: #cb52ff; color: #ffffff;"
+                                : "background-color: #f4d9ff;"}
+                        >
+                            <Label>{SamplingMethods[method]}</Label>
+                        </Button>
+                    {/each}
+                </Group>
+            </div>
+            <div class="ml-10 eng mt-3">Seed</div>
+            <div class="ml-2">
+                <Textfield class="ml-2 h-10" type="number" bind:value={seed} />
+            </div>
+            <div class="ml-4 mt-1">
                 <Button
                     on:click={() => {
-                        selected_sampling = sampling_methods[method];
+                        seed = Math.floor(Math.random() * 1000000);
                     }}
-                    variant="outlined"
-                    color={selected_sampling === sampling_methods[method]
-                        ? "primary"
-                        : "secondary"}
-                    style={selected_sampling === sampling_methods[method]
-                        ? "background-color: #cb52ff; color: #ffffff;"
-                        : "background-color: #f4d9ff;"}
+                    variant="raised"
                 >
-                    <Label>{sampling_methods[method]}</Label>
+                    <Label>Random</Label>
                 </Button>
-            {/each}
-        </Group>
+            </div>
+        </div>
     </div>
     <div class="flex flex-row mb-4">
         <div class="basis-2/3  bg-slate-300 rounded-sm mt-2 ml-4">
             <div class="flex flex-row mt-2 ml-2">
                 <div>
                     <Textfield
+                        type="number"
                         class="shaped-filled w-full ml-2"
                         variant="filled"
                         bind:value={width}
                         label="Width"
-                    >
-                    </Textfield>
+                    />
                 </div>
                 <div class="basis-3/4 mt-1">
-                    <Slider bind:value={width} min={0} max={2048} step={1} />
+                    <Slider bind:value={width} min={0} max={2048} step={64} />
                 </div>
+                <div class="mt-4 text-sm">2048</div>
             </div>
             <div class="flex flex-row mt-2 ml-2">
                 <div>
                     <Textfield
+                        type="number"
                         class="shaped-filled w-full ml-2"
                         variant="filled"
                         bind:value={height}
                         label="Height"
-                    >
-                    </Textfield>
+                    />
                 </div>
                 <div class="basis-3/4 mt-1">
-                    <Slider bind:value={height} min={0} max={2048} step={1} />
+                    <Slider bind:value={height} min={0} max={2048} step={64} />
                 </div>
+                <div class="mt-4 text-sm">2048</div>
             </div>
             <div class="flex flex-row mt-2 ml-2">
                 <div>
                     <Textfield
+                        type="number"
                         class="shaped-filled w-full ml-2"
                         variant="filled"
                         bind:value={cfg_scale}
                         label="Cfg scale"
-                    >
-                    </Textfield>
+                    />
                 </div>
                 <div class="basis-3/4 mt-1 mb-3">
                     <Slider
@@ -108,40 +171,61 @@
                         step={0.5}
                     />
                 </div>
+                <div class="mt-4 text-sm">30</div>
+            </div>
+            <div class="flex flex-row mt-2 ml-2">
+                <div>
+                    <Textfield
+                        type="number"
+                        class="shaped-filled w-full ml-2"
+                        variant="filled"
+                        bind:value={steps}
+                        label="Steps"
+                    />
+                </div>
+                <div class="basis-3/4 mt-1 mb-3">
+                    <Slider bind:value={steps} min={0} max={100} step={1} />
+                </div>
+                <div class="mt-4 text-sm">30</div>
             </div>
         </div>
         <div class="flex flex-col basis-1/3">
             <div
-                class="basis-1/4 flex flex-row ml-2 mt-2 mr-4 bg-slate-300 items-center"
+                class="basis-1/4 flex flex-row ml-2 mt-2 mr-4 bg-slate-300 items-center eng"
             >
-                <Set chips={choices_opt} let:chip filter bind:selected>
-                    <Chip {chip} touch>
-                        <Text>{chip}</Text>
-                    </Chip>
-                </Set>
+                <div class="ml-3">
+                    Restore faces
+                    <Switch bind:checked={restore_faces} />
+                </div>
+                <div class="ml-3">
+                    Tiling
+                    <Switch bind:checked={tiling} />
+                </div>
+                <div class="ml-3">
+                    Highres fix
+                    <Switch bind:checked={highres_fix} />
+                </div>
             </div>
-            <div
-                class="basis-3/4 flex flex-row ml-2 mt-2 mr-4 bg-slate-300 items-center"
-            >
-                <div class="ml-2">
+            <div class="basis-3/4 flex flex-row ml-2 mt-2 mr-4 bg-slate-300">
+                <div class="mt-3">
                     <Textfield
-                        class="shaped-filled w-full ml-2"
+                        type="number"
+                        class="shaped-filled ml-2"
                         variant="filled"
-                        bind:value={seed}
-                        label="Seed"
+                        bind:value={number_of_generation}
+                        label="Number of generation"
+                    />
+                    <Slider
+                        class=" w-[85%]"
+                        bind:value={number_of_generation}
+                        min={1}
+                        max={16}
+                        step={1}
                     />
                 </div>
-                <div class="ml-4">
-                    <Button
-                        on:click={() => {
-                            seed = Math.floor(
-                                Math.random() * 1000000
-                            ).toString();
-                        }}
-                        variant="raised"
-                    >
-                        <Label>Random</Label>
-                    </Button>
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <div on:click={submitTask}>
+                    <Genbutton />
                 </div>
             </div>
         </div>
@@ -149,12 +233,6 @@
 </div>
 
 <style>
-
-    .title {
-        font-family: "Jost", sans-serif;
-        font-size: xx-large;
-    }
-
     .eng {
         font-family: "Jost", sans-serif;
     }

@@ -15,6 +15,7 @@
 
     let tag: Tag;
     let _toggle = false;
+    let current_usage: Usage;
     function handleTags(index: number, usage: Usage) {
         if (usage == Usage.text2img_positive) {
             tag = $text2img_positive_tags.find((t) => t.order == index);
@@ -44,12 +45,14 @@
             <Taginput
                 usage={Usage.text2img_positive}
                 on:tagclick={(e) => {
+                    current_usage = Usage.text2img_positive;
                     handleTags(e.detail, Usage.text2img_positive);
                 }}
             />
             <Taginput
                 usage={Usage.text2img_negative}
                 on:tagclick={(e) => {
+                    current_usage = Usage.text2img_negative;
                     handleTags(e.detail, Usage.text2img_negative);
                 }}
             />
@@ -73,7 +76,7 @@
                     out:fly={{ y: -20 }}
                     on:outroend={onOutro}
                 >
-                    <Tagedit {tag} />
+                    <Tagedit {tag} usage={current_usage} />
                 </div>
             {:else if $state == "tag2"}
                 <div
@@ -81,7 +84,7 @@
                     out:fly={{ y: -20 }}
                     on:outroend={onOutro}
                 >
-                    <Tagedit {tag} />
+                    <Tagedit {tag} usage={current_usage} />
                 </div>
             {/if}
         </div>

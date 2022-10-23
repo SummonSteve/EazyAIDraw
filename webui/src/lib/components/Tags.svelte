@@ -23,6 +23,7 @@
     import { set_input_value } from "svelte/internal";
 
     const flipDurationMs = 200;
+    const dropFromOthersDisabled = true;
 
     const dispatch = createEventDispatcher();
 
@@ -190,6 +191,7 @@
         tags = e.detail.items.map((item) => item.tag);
         items = e.detail.items;
 
+        console.log(usage);
         if (usage === Usage.text2img_positive) {
             let _tags: Array<Tag> = $text2img_positive_tags;
             _tags.forEach((tag) => {
@@ -680,7 +682,7 @@
 
     {#if tags.length > 0}
         <div
-            use:dndzone={{ items, flipDurationMs }}
+            use:dndzone={{ items, flipDurationMs, dropFromOthersDisabled }}
             on:consider={handleDndConsider}
             on:finalize={handleDndFinalize}
             class="flex flex-wrap"

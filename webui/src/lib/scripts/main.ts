@@ -2,36 +2,40 @@ import ReconnectingWebSocket from 'reconnecting-websocket';
 import { writable } from 'svelte/store';
 import { addMessage, Message, messageType } from './message';
 
-const ws_url = 'ws://127.0.0.1:2334'
-
-enum EventType {
-
-}
-
-class Event {
-
-}
+const ws_url = 'ws://127.0.0.1:2339'
 
 class WsHandler {
     public ws: ReconnectingWebSocket;
+    public outgoing_event_queue:Array<any>;
     constructor() {
-        this.ws = new ReconnectingWebSocket(ws_url)
+        this.outgoing_event_queue = [];
+        this.ws = new ReconnectingWebSocket(ws_url);
         this.ws.onopen = () => {
-            console.log('ws open')
+            setTimeout(() => {
+                addMessage("Websocket connected", messageType.info, 3000);
+            }, 1000);
         }
 
         this.ws.onmessage = (e) => {
-            addMessage(e.data, messageType.info, 3000)
+            
         }
 
         setInterval(() => {
-            this.ws.send('"ping"')
+            if (this.outgoing_event_queue.length > 0) {
+                console.log(this.outgoing_event_queue);
+                this.ws.send(this.outgoing_event_queue.pop());
+            }
+        }, 100)
+    }
 
-        }, 5000)
-
-
+    public send(event: any) {
+        console.log(event);
+        this.outgoing_event_queue.push(event);
     }
 }
 
+const handler = new WsHandler();
 
-export { WsHandler }
+export function send(event) {
+    handler.send(event);
+}

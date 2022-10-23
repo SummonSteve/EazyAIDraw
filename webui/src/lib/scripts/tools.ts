@@ -7,10 +7,11 @@ import { img2img_positive_tags,
         text2img_negative_tags,
         img2img_negative_tags_input,
         text2img_negative_tags_input,
-        Usage, Tag, TagType } from "./state";
+        sync_config,
+        Usage, Tag, TagType, Configuration } from "./state";
 import { addMessage, messageType } from "./message";
 
-const cfgs = ['Steps:', 'Sampler:', 'CFG scale:', 'Seed:', 'Face restoration', 'Size', 'Model hash:', 'Clip skip:', 'ENSD:', 'Denoising strength:']
+const cfgs = ['Steps:', 'Sampler:', 'CFG scale:', 'Seed:', 'Face restoration:', 'Size:', 'Model hash:', 'Clip skip:', 'ENSD:', 'Denoising strength:', 'Highres fix:', 'Tiling:']
 
 export const refresh_event_notifier = writable(0);
 
@@ -45,11 +46,17 @@ export function parsePromptString(usage: Usage) {
     if (negative.includes("Steps:")) {
         negative = negative.split("Steps:")[0]
     }
+    let cfg_dict = {};
     cfgs.forEach((cfg) => {
         if (prompt_str.includes(cfg)) {
             let _cfg = prompt_str.split(cfg)[1].split(",")[0].trim();
+            cfg_dict[cfg] = _cfg;
         }
     })
+    try {
+        let cfg = paresConfiguration(cfg_dict);
+        sync_config.set(cfg);
+    } catch (e) {}
 
     let positive_tags = positive.split(",");
     let negative_tags = negative.split(",");
@@ -70,7 +77,6 @@ export function parsePromptString(usage: Usage) {
             negativeTagArray.push(parseTag(tag, i));
         });
     }
-
 
     if (usage === Usage.img2img_positive) {
         img2img_positive_tags.set(positiveTagArray);
@@ -126,7 +132,7 @@ export function parseTag(tag_str: string, id: number): Tag {
                 .split("|")
                 .forEach(elem => {
                     tag.name = elem.split(":")[0];
-                    tag.value.push(elem.split(":")[0]);
+                    tag.value.push(elem.split(":")[0].trim());
                     tag.weights.push(elem.split(":")[1] ? parseFloat(elem.split(":")[1].trim()) : 1)
                 })
         } else if (colon_count === 0) {
@@ -147,7 +153,7 @@ export function parseTag(tag_str: string, id: number): Tag {
                 .split("|")
                 .forEach(elem => {
                     tag.name = elem.split(":")[0];
-                    tag.value.push(elem.split(":")[0]);
+                    tag.value.push(elem.split(":")[0].trim());
                     tag.weights.push(elem.split(":")[1] ? parseFloat(elem.split(":")[1].trim()) : 1)
                 })
         } else if (tag_str.includes(":") && bracket_count > 1) {
@@ -173,7 +179,8 @@ export function parseTag(tag_str: string, id: number): Tag {
         if (colon_count === 0) {
             tag.name = [...tag_str].filter(char => !["[", "]"].includes(char)).join("")
             tag.value.push(tag.name)
-            tag.weights.push(10/11);
+            tag.polarity = false;
+            tag.weights.push(1);
         }
     } else {
         tag.name = tag_str.trim()
@@ -187,7 +194,6 @@ export function parseTag(tag_str: string, id: number): Tag {
 
     if (tag.name.split("\\").length === 3) {
         tag.name = tag.name.replace(/\\/, "(");
-        console.log(tag.name);
         tag.name = tag.name.replace(/\\/, ")");
         if (tag.name_is_value){
             tag.value[0] = tag.name;
@@ -196,4 +202,24 @@ export function parseTag(tag_str: string, id: number): Tag {
 
     tag.name = tag.name.trim();
     return tag;
+}
+
+export function paresConfiguration(config_dict): Configuration {
+    let cfg = new Configuration();
+    cfg.steps = parseFloat(config_dict["Steps:"]);
+    cfg.cfg_scale = parseFloat(config_dict["CFG scale:"]);
+    cfg.height = parseFloat(config_dict["Size:"].split("x")[1]);
+    cfg.width = parseFloat(config_dict["Size:"].split("x")[0]);
+    cfg.highres_fix = config_dict["Highres fix:"] == 'true';
+    cfg.clip_skip = parseFloat(config_dict["Clip skip:"]);
+    cfg.denoising_strength = parseFloat(config_dict["Denoising strength:"]);
+    cfg.face_restoration = config_dict["Face restoration:"];
+    if(cfg.face_restoration){
+        cfg.restore_face = true;
+    }
+    cfg.model_hash = config_dict["Model hash:"];
+    cfg.sampling_method = config_dict["Sampler:"];
+    cfg.seed = parseFloat(config_dict["Seed:"]);
+    cfg.tiling = config_dict["Tiling:"] == 'true';
+    return cfg;
 }
