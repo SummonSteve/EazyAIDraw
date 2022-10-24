@@ -84,17 +84,17 @@ export function syncTags(curr: Usage) {
 }
 
 export enum SamplingMethods {
-    euler_a = "Euler a",
     euler = "Euler",
+    euler_a = "Euler a",
     lms = "LMS",
     heun = "Heun",
     dpm2 = "DPM2",
-    dpm2a = "DPM2a",
+    dpm2a = "DPM2 a",
     dpm_fast = "DPM fast",
     dpm_adaptive = "DPM adaptive",
     lms_karras = "LMS Karras",
     dpm2_karras = "DPM2 Karras",
-    dpm2a_karras = "DPM2a Karras",
+    dpm2a_karras = "DPM2 a Karras",
     ddim = "DDIM",
     plms = "PLMS",
 }

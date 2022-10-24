@@ -1,8 +1,10 @@
 import ReconnectingWebSocket from 'reconnecting-websocket';
-import { writable } from 'svelte/store';
+import { get, writable } from 'svelte/store';
 import { addMessage, Message, messageType } from './message';
-
-const ws_url = 'ws://127.0.0.1:2339'
+import { parseBlobImageToBase64 } from './tools'
+ 
+const ws_url = 'ws://127.0.0.1:2339';
+export const images_store = writable([{id: 0, b64: ""}]);
 
 class WsHandler {
     public ws: ReconnectingWebSocket;
@@ -16,8 +18,15 @@ class WsHandler {
             }, 1000);
         }
 
-        this.ws.onmessage = (e) => {
-            
+        this.ws.onmessage = async (e: MessageEvent) => {
+            if (e.data instanceof Blob) {
+                console.log("new image");
+                let pic = await parseBlobImageToBase64(e.data)
+                images_store.update((images) => {
+                    images.push(pic);
+                    return images;
+                });
+            }
         }
 
         setInterval(() => {

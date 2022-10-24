@@ -1,9 +1,9 @@
-use dotenv_codegen::dotenv;
 use serde_json::Value;
 use crossbeam::channel::{unbounded, Receiver, Sender};
 use reqwest::{RequestBuilder, Response};
 use tokio_tungstenite::tungstenite::Message;
 use miniz_oxide::deflate::compress_to_vec_zlib;
+use byteorder::{LittleEndian, WriteBytesExt};
 
 pub struct CallExecutor {
     response_tx: Sender<(Response, Sender<Message>)>,
@@ -38,8 +38,9 @@ impl CallExecutor {
 }
 
 async fn handle_and_send(response: Response, sender: Sender<Message>) {
+    let id: i64 = response.headers().get("id").unwrap().clone().to_str().unwrap().parse().unwrap();
     let body = response.text().await.unwrap();
-    if let Ok::<Value, _>(nai_response) = serde_json::from_str(&body) {
+    if let Ok::<Value, _>(sd_response) = serde_json::from_str(&body) {
     } else {
         let imgs_b64 = body
             .split("data:")
@@ -55,7 +56,8 @@ async fn handle_and_send(response: Response, sender: Sender<Message>) {
             .collect::<Vec<&str>>();
 
             for img_b64 in imgs_b64 {
-                let raw_img = base64::decode(img_b64).unwrap();
+                let mut raw_img = base64::decode(img_b64).unwrap();
+                raw_img.write_i64::<LittleEndian>(id).unwrap();
                 sender.send(Message::Binary(compress_to_vec_zlib(&raw_img, 10))).unwrap();
             }
 

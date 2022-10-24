@@ -2,9 +2,10 @@ pub mod structures;
 pub mod scheduler;
 pub mod backend;
 pub mod request_executor;
+use serde::{Serialize, Deserialize};
 
 
-use crossbeam::channel::{unbounded, Sender, Receiver};
+use crossbeam::channel::Sender;
 use tokio_tungstenite::tungstenite::Message;
 
 
@@ -21,6 +22,7 @@ pub enum BackendType{
 pub enum TaskMessage {
     TaskSyncStatus(BackendProgress),
     Task(DrawTask),
+    RequestSchedulerStatus,
 }
 
 pub struct DrawTask {
@@ -52,3 +54,8 @@ impl DrawTask {
     }
 }
 
+#[derive(Serialize, Deserialize ,Debug)]
+pub struct  TaskSchedulerStatus {
+    pub task_in_queue: u32,
+    pub current_tasks: Vec<i64>,
+}

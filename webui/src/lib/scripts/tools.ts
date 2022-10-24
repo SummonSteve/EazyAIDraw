@@ -1,15 +1,20 @@
 import { get, writable } from "svelte/store";
-import { img2img_positive_tags,
-        text2img_positive_tags,
-        img2img_positive_tags_input,
-        text2img_positive_tags_input,
-        img2img_negative_tags,
-        text2img_negative_tags,
-        img2img_negative_tags_input,
-        text2img_negative_tags_input,
-        sync_config,
-        Usage, Tag, TagType, Configuration } from "./state";
+import {
+    img2img_positive_tags,
+    text2img_positive_tags,
+    img2img_positive_tags_input,
+    text2img_positive_tags_input,
+    img2img_negative_tags,
+    text2img_negative_tags,
+    img2img_negative_tags_input,
+    text2img_negative_tags_input,
+    sync_config,
+    Usage, Tag, TagType, Configuration
+} from "./state";
 import { addMessage, messageType } from "./message";
+import * as base64 from "byte-base64";
+
+import { inflate } from "pako";
 
 const cfgs = ['Steps:', 'Sampler:', 'CFG scale:', 'Seed:', 'Face restoration:', 'Size:', 'Model hash:', 'Clip skip:', 'ENSD:', 'Denoising strength:', 'Highres fix:', 'Tiling:']
 
@@ -56,7 +61,7 @@ export function parsePromptString(usage: Usage) {
     try {
         let cfg = paresConfiguration(cfg_dict);
         sync_config.set(cfg);
-    } catch (e) {}
+    } catch (e) { }
 
     let positive_tags = positive.split(",");
     let negative_tags = negative.split(",");
@@ -66,7 +71,7 @@ export function parsePromptString(usage: Usage) {
             positiveTagArray.push(parseTag(tag, i));
         });
 
-        if(negative_tags.length > 1) {
+        if (negative_tags.length > 1) {
             negative_tags.forEach((tag, i) => {
                 negativeTagArray.push(parseTag(tag, i));
             });
@@ -195,7 +200,7 @@ export function parseTag(tag_str: string, id: number): Tag {
     if (tag.name.split("\\").length === 3) {
         tag.name = tag.name.replace(/\\/, "(");
         tag.name = tag.name.replace(/\\/, ")");
-        if (tag.name_is_value){
+        if (tag.name_is_value) {
             tag.value[0] = tag.name;
         }
     }
@@ -214,7 +219,7 @@ export function paresConfiguration(config_dict): Configuration {
     cfg.clip_skip = parseFloat(config_dict["Clip skip:"]);
     cfg.denoising_strength = parseFloat(config_dict["Denoising strength:"]);
     cfg.face_restoration = config_dict["Face restoration:"];
-    if(cfg.face_restoration){
+    if (cfg.face_restoration) {
         cfg.restore_face = true;
     }
     cfg.model_hash = config_dict["Model hash:"];
@@ -222,4 +227,16 @@ export function paresConfiguration(config_dict): Configuration {
     cfg.seed = parseFloat(config_dict["Seed:"]);
     cfg.tiling = config_dict["Tiling:"] == 'true';
     return cfg;
+}
+
+export async function parseBlobImageToBase64(blob: Blob): Promise<{id: number, b64: string}> {
+    let base64String: string = "data:image/png;base64,";
+    let inflated = inflate(await blob.arrayBuffer());
+    let id_bytes = inflated.slice(-8);
+    let image_bytes = inflated.slice(0, -8);
+    let view = new DataView(id_bytes.buffer);
+    let id = view.getUint32(0, true);
+    base64String += base64.bytesToBase64(image_bytes);
+    console.log(base64String);
+    return {id: id, b64: base64String};
 }

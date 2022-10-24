@@ -1,8 +1,9 @@
 pub mod draw_result;
 pub mod draw_call;
 
+use std::str;
 use serde::{Serialize, Deserialize};
-
+use serde_json::Value;
 use crate::backapis::structures::novelai;
 use crate::backapis::structures::stablediffusion;
 
@@ -25,6 +26,8 @@ pub enum IncomePacket {
     DatabasePing,
     #[serde(rename = "backend_post_progress")]
     BackendPostProgress(BackendProgress),
+    #[serde(rename = "backend_status_request")]
+    BackendStatusRequest,
 }
 
 
@@ -37,7 +40,27 @@ pub struct BackendProgress{
 
 
 #[derive(Serialize, Deserialize ,Debug)]
-pub enum OutcomePacket {
+pub enum OutcomePacketType {
+    #[serde(rename = "draw_call_result")]
     DrawCallResult,
+    #[serde(rename = "draw_call_progress")]
     DrawProgress,
+    #[serde(rename = "backend_status")]
+    BackendStatus,
+}
+
+
+#[derive(Serialize, Deserialize ,Debug)]
+pub struct OutcomePacket {
+    pub packet_type: OutcomePacketType,
+    pub body: Value,
+}
+
+impl OutcomePacket {
+    pub fn new(packet_type: OutcomePacketType, body: Value) -> Self {
+        Self {
+            packet_type,
+            body
+        }
+    }
 }

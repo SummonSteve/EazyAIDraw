@@ -14,7 +14,7 @@
     <i class="sidebar-icon group">
         <div class="m-2">
             <span class="sidebar-tooltip group-hover:scale-100">
-                菜单
+                Workbench
             </span>
             <MdApps />
         </div>
@@ -22,15 +22,7 @@
     <i class="sidebar-icon group">
         <div class="m-2">
             <span class="sidebar-tooltip group-hover:scale-100">
-                服务状态
-            </span>
-            <MdInsertChart />
-        </div>
-    </i>
-    <i class="sidebar-icon group">
-        <div class="m-2">
-            <span class="sidebar-tooltip group-hover:scale-100">
-                图库
+                Gallary
             </span>
             <MdBurstMode />
         </div>
@@ -38,7 +30,7 @@
     <i class="sidebar-icon group">
         <div class="m-2">
             <span class="sidebar-tooltip group-hover:scale-100">
-                设置
+                Settings
             </span>
             <MdSettings />
         </div>
@@ -46,7 +38,7 @@
     <i class="sidebar-icon group">
         <div class="m-2">
             <span class="sidebar-tooltip group-hover:scale-100">
-                用户
+                User
             </span>
             <MdAccountCircle />
         </div>
@@ -54,7 +46,7 @@
     <i class="sidebar-icon group">
         <div class="m-2">
             <span class="sidebar-tooltip group-hover:scale-100">
-                强制同步
+                Sync
             </span>
             <MdAutorenew />
         </div>

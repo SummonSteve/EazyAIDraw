@@ -1,7 +1,6 @@
-use crate::backapis::{DrawTask, TaskMessage};
+use crate::backapis::TaskMessage;
 use color_eyre::Result;
 use crossbeam::channel::Sender;
-use dashmap::DashMap;
 use futures_util::{SinkExt, StreamExt};
 use std::{
     net::SocketAddr,
@@ -12,24 +11,21 @@ use tokio::{
     net::{TcpListener, TcpStream},
     time,
 };
+
+use pollster::FutureExt;
 use tokio_tungstenite::tungstenite::protocol::Message;
-use tracing::{debug, error, info, warn};
-use uuid::Uuid;
+use tracing::{error, info, warn};
 
 use super::handler::Handler as InnerHandler;
 
-type PeerMap = Arc<Mutex<DashMap<SocketAddr, (Uuid, Sender<Message>)>>>;
-
 pub struct Handler {
-    peer_map: PeerMap,
     task_sender: Sender<TaskMessage>,
 }
 
 impl Handler {
-    pub fn new(tx: Sender<TaskMessage>) -> Self {
+    pub fn new(task_message_tx: Sender<TaskMessage>) -> Self {
         Self {
-            peer_map: Arc::new(Mutex::new(DashMap::new())),
-            task_sender: tx,
+            task_sender: task_message_tx,
         }
     }
 
@@ -48,7 +44,7 @@ impl Handler {
 async fn handle_connection(
     stream: TcpStream,
     addr: SocketAddr,
-    task_sender: Sender<TaskMessage>,
+    task_sender: Sender<TaskMessage>
 ) -> Result<()> {
     info!("Incoming TCP connection from: {}", addr);
     let ws_stream = tokio_tungstenite::accept_async(stream)
@@ -60,22 +56,21 @@ async fn handle_connection(
 
     let (mut outgoing, mut incoming) = ws_stream.split();
 
-    let timeout_duration = Duration::from_secs(300);
+    let timeout_duration = Duration::from_secs(3000);
     let mut interval = time::interval(timeout_duration);
 
     let last_time = Arc::new(Mutex::new(time::Instant::now()));
 
     let inner_handler = InnerHandler::new(task_sender);
 
-    tokio::spawn(async move {
+    std::thread::spawn(move||{
         loop {
             match rx.recv() {
-                Ok(msg) => outgoing.send(msg).await.unwrap(),
+                Ok(msg) => outgoing.send(msg).block_on().unwrap(),
                 Err(_) => break,
             }
         }
     });
-
     loop {
         tokio::select! {
             income_packet = incoming.next() => {
@@ -85,11 +80,15 @@ async fn handle_connection(
                             match packet {
                                 Message::Close(_) => {
                                     warn!("Closing connection with {}", addr);
+                                    drop(tx);
                                     break;
                                 }
-                                _ =>{
+                                Message::Text(_) => {
                                     *last_time.lock().unwrap() = time::Instant::now();
                                     inner_handler.handle_packet(packet, tx.clone()).await?
+                                }
+                                _ => {
+                                    info!("unknow")
                                 }
                             }
                         },

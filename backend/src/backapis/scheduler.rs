@@ -1,18 +1,20 @@
 use super::{
     backend::{Backend, Backends},
     request_executor::CallExecutor,
-    DrawTask, TaskMessage,
+    DrawTask, TaskMessage, TaskSchedulerStatus,
 };
+use crate::glob::STATUS;
 use crate::session::packets::draw_result::TaskStatus;
 use crate::session::packets::draw_result::{DrawProgress, DrawResult};
 use color_eyre::Result;
 use crossbeam::channel::Receiver;
-use indexmap::IndexMap;
 use dotenv_codegen::dotenv;
-use std::{sync::Arc, collections::VecDeque};
+use indexmap::IndexMap;
+use std::sync::Arc;
 use tokio::time::{self, Duration};
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{info, warn};
+use crate::session::packets::{OutcomePacket, OutcomePacketType};
 
 pub struct TaskScheduler {
     task_recv: Receiver<TaskMessage>,
@@ -20,6 +22,7 @@ pub struct TaskScheduler {
     tasks: IndexMap<i64, DrawTask>,
     backends: Backends,
     executor: CallExecutor,
+    current_tasks: Vec<i64>,
 }
 
 impl TaskScheduler {
@@ -36,12 +39,13 @@ impl TaskScheduler {
             tasks: IndexMap::new(),
             backends: Backends::new(sd_backend, nai_backend),
             executor: CallExecutor::new(),
+            current_tasks: Vec::new(),
         }
     }
 
     pub fn start(mut self) -> Result<()> {
         self.executor.start();
-        let mut watch_interval = time::interval(Duration::from_millis(200));
+        let mut watch_interval = time::interval(Duration::from_millis(153));
         let mut task_interval = time::interval(Duration::from_millis(100));
         tokio::spawn(async move {
             loop {
@@ -76,22 +80,31 @@ impl TaskScheduler {
                             }
                         }
                         self.tasks.retain(|_, task| !task.completed);
-
                         if let Ok(task_msg) = self.task_recv.try_recv() {
                             match task_msg {
                                 TaskMessage::TaskSyncStatus(status) => {
                                     let id = status.id;
-                                    let mut task = self.tasks.get_mut(&id).unwrap();
-                                    if status.current == status.total {
-                                        task.completed = true;
+                                    if let Some(mut task) = self.tasks.get_mut(&id) {
+                                        if status.current == status.total {
+                                            task.completed = true;
+                                        }
+                                        task.current_step = status.current;
                                     }
-                                    task.current_step = status.current;
+
                                 },
                                 TaskMessage::Task(task) => {
                                     info!("Current task in stack: {}", self.tasks.len());
                                     info!("Received task {}", task.id);
                                     task.owner.clone().try_send(Message::Text(serde_json::to_string(&DrawResult::new(task.id, self.tasks.len(), TaskStatus::Pending)).unwrap())).unwrap();
                                     self.tasks.insert(task.id, task);
+                                },
+                                TaskMessage::RequestSchedulerStatus => {
+                                    let now_status = TaskSchedulerStatus{
+                                        task_in_queue: self.tasks.len() as u32,
+                                        current_tasks: self.current_tasks.clone(),
+                                    };
+
+                                    *STATUS.lock().unwrap() = now_status;
                                 }
                             }
                         }
@@ -100,15 +113,16 @@ impl TaskScheduler {
                     _ = watch_interval.tick() => {
                         for (_, task) in self.tasks.iter(){
                             if !task.completed && task.started {
+                                let struct_str = serde_json::to_string(&DrawProgress::new(
+                                    task.id,
+                                    task.current_step,
+                                    task.total_step,
+                                )).unwrap();
+                                let res = OutcomePacket::new(OutcomePacketType::DrawProgress, serde_json::from_str(&struct_str).unwrap());
+                                
+        
                                 task.owner
-                                    .try_send(Message::Text(
-                                        serde_json::to_string(&DrawProgress::new(
-                                            task.id,
-                                            task.current_step,
-                                            task.total_step,
-                                        ))
-                                        .unwrap()
-                                    ))
+                                    .try_send(Message::Text(serde_json::to_string(&res).unwrap()))
                                     .unwrap_or_else(|e|{warn!("{}",e)});
                             }
                         }

@@ -41,7 +41,6 @@
     export let usage: Usage;
 
     sync_config.subscribe((cfg) => {
-        console.log("sync_config", cfg);
         selected_sampling = cfg.sampling_method;
         width = cfg.width;
         height = cfg.height;
@@ -55,7 +54,6 @@
 
     function submitTask() {
         if (usage == Usage.text2img_positive) {
-            console.log("submitting task");
             let prompt = $text2img_positive_tags
                 .sort((a, b) => a.order - b.order)
                 .map((tag: Tag) => tag.raw)
@@ -105,88 +103,96 @@
                     {/each}
                 </Group>
             </div>
-            <div class="ml-10 eng mt-3">Seed</div>
-            <div class="ml-2">
-                <Textfield class="ml-2 h-10" type="number" bind:value={seed} />
-            </div>
-            <div class="ml-4 mt-1">
-                <Button
-                    on:click={() => {
-                        seed = Math.floor(Math.random() * 1000000);
-                    }}
-                    variant="raised"
-                >
-                    <Label>Random</Label>
-                </Button>
+            <div class="flex flex-row">
+                <div class="ml-10 eng mt-3">Seed</div>
+                <div class="ml-2">
+                    <Textfield
+                        class="ml-2 h-10"
+                        type="number"
+                        bind:value={seed}
+                    />
+                </div>
+                <div class="ml-4 mt-1">
+                    <Button
+                        on:click={() => {
+                            seed = Math.floor(Math.random() * 1000000);
+                        }}
+                        variant="raised"
+                    >
+                        <Label>Random</Label>
+                    </Button>
+                </div>
             </div>
         </div>
     </div>
     <div class="flex flex-row mb-4">
         <div class="basis-2/3  bg-slate-300 rounded-sm mt-2 ml-4">
-            <div class="flex flex-row mt-2 ml-2">
-                <div>
-                    <Textfield
-                        type="number"
-                        class="shaped-filled w-full ml-2"
-                        variant="filled"
-                        bind:value={width}
-                        label="Width"
-                    />
+            <div class="flex flex-row">
+                <div class="basis-1/2">
+                    <div class="flex flex-row mt-2 ml-2">
+                        <div class="basis-1/4">
+                            <Textfield
+                                type="number"
+                                class="shaped-filled w-full ml-2"
+                                variant="filled"
+                                bind:value={width}
+                                label="Width"
+                            />
+                        </div>
+                        <div class="basis-3/4 mt-1">
+                            <Slider bind:value={width} min={0} max={2048} step={64} />
+                        </div>
+                    </div>
+                    <div class="flex flex-row mt-2 ml-2">
+                        <div class="basis-1/4">
+                            <Textfield
+                                type="number"
+                                class="shaped-filled w-full ml-2"
+                                variant="filled"
+                                bind:value={height}
+                                label="Height"
+                            />
+                        </div>
+                        <div class="basis-3/4 mt-1">
+                            <Slider bind:value={height} min={0} max={2048} step={64} />
+                        </div>
+                    </div>
                 </div>
-                <div class="basis-3/4 mt-1">
-                    <Slider bind:value={width} min={0} max={2048} step={64} />
+                <div class="basis-1/2">
+                    <div class="flex flex-row mt-2 ml-2">
+                        <div class="basis-1/4">
+                            <Textfield
+                                type="number"
+                                class="shaped-filled w-full ml-2"
+                                variant="filled"
+                                bind:value={cfg_scale}
+                                label="Cfg scale"
+                            />
+                        </div>
+                        <div class="basis-3/4 mt-1">
+                            <Slider
+                                bind:value={cfg_scale}
+                                min={0}
+                                max={30}
+                                step={0.5}
+                            />
+                        </div>
+                    </div>
+                    <div class="flex flex-row mt-2 ml-2">
+                        <div class="basis-1/4">
+                            <Textfield
+                                type="number"
+                                class="shaped-filled w-full ml-2"
+                                variant="filled"
+                                bind:value={steps}
+                                label="Steps"
+                            />
+                        </div>
+                        <div class="basis-3/4 mt-1">
+                            <Slider bind:value={steps} min={0} max={100} step={1} />
+                        </div>
+                    </div>
                 </div>
-                <div class="mt-4 text-sm">2048</div>
-            </div>
-            <div class="flex flex-row mt-2 ml-2">
-                <div>
-                    <Textfield
-                        type="number"
-                        class="shaped-filled w-full ml-2"
-                        variant="filled"
-                        bind:value={height}
-                        label="Height"
-                    />
-                </div>
-                <div class="basis-3/4 mt-1">
-                    <Slider bind:value={height} min={0} max={2048} step={64} />
-                </div>
-                <div class="mt-4 text-sm">2048</div>
-            </div>
-            <div class="flex flex-row mt-2 ml-2">
-                <div>
-                    <Textfield
-                        type="number"
-                        class="shaped-filled w-full ml-2"
-                        variant="filled"
-                        bind:value={cfg_scale}
-                        label="Cfg scale"
-                    />
-                </div>
-                <div class="basis-3/4 mt-1 mb-3">
-                    <Slider
-                        bind:value={cfg_scale}
-                        min={0}
-                        max={30}
-                        step={0.5}
-                    />
-                </div>
-                <div class="mt-4 text-sm">30</div>
-            </div>
-            <div class="flex flex-row mt-2 ml-2">
-                <div>
-                    <Textfield
-                        type="number"
-                        class="shaped-filled w-full ml-2"
-                        variant="filled"
-                        bind:value={steps}
-                        label="Steps"
-                    />
-                </div>
-                <div class="basis-3/4 mt-1 mb-3">
-                    <Slider bind:value={steps} min={0} max={100} step={1} />
-                </div>
-                <div class="mt-4 text-sm">30</div>
             </div>
         </div>
         <div class="flex flex-col basis-1/3">
@@ -213,7 +219,7 @@
                         class="shaped-filled ml-2"
                         variant="filled"
                         bind:value={number_of_generation}
-                        label="Number of generation"
+                        label="Number of Images"
                     />
                     <Slider
                         class=" w-[85%]"

@@ -9,7 +9,7 @@ use super::DrawCall;
 
 static UC_DEFAULT: &str = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry,";
 
-#[derive(Serialize, Deserialize ,Debug)]
+#[derive(Serialize, Deserialize ,Debug, Clone)]
 pub enum StableDiffusionSampler {
     #[serde(rename = "plms")]
     Plms,
@@ -30,7 +30,7 @@ pub enum StableDiffusionSampler {
 }
 
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GenerateStream {
     pub id: i64,
     pub height: i32,

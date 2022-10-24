@@ -1,27 +1,21 @@
-use std::sync::Arc;
 use color_eyre::Result;
-use sea_orm::{ConnectionTrait, Statement, EntityTrait, DatabaseConnection};
 use tokio_tungstenite::tungstenite::Message;
 use crossbeam::channel::Sender;
-use tracing::{info, warn, error};
+use tracing::{info, error};
 use crate::backapis::TaskMessage;
-use crate::backapis::{scheduler::TaskScheduler, DrawTask};
-use crate::glob::DB;
+use crate::glob::STATUS;
 use crate::session::packets::draw_call::handle_draw_call;
-use crate::session::packets::draw_result::DrawResult;
-use crate::session::packets::draw_result::TaskStatus;
 
-use super::packets::IncomePacket;
+
+use super::packets::{IncomePacket, OutcomePacketType, OutcomePacket};
 
 pub struct Handler {
-    db: Arc<DatabaseConnection>,
     task_sender: Sender<TaskMessage>,
 }
 
 impl Handler {
     pub fn new(task_sender: Sender<TaskMessage>) -> Self {
         Self {
-            db: DB.clone(),
             task_sender,
         }
     }
@@ -41,9 +35,18 @@ impl Handler {
                     }
 
                     IncomePacket::BackendPostProgress(progress) => {
-                        let tx = self.task_sender.clone();
-                        tx.send(TaskMessage::TaskSyncStatus(progress)).unwrap();
+                        self.task_sender.send(TaskMessage::TaskSyncStatus(progress))?;
                         Ok(())
+                    }
+
+                    IncomePacket::BackendStatusRequest => {
+                        self.task_sender.send(TaskMessage::RequestSchedulerStatus).unwrap();
+                        let status = &*STATUS.lock().unwrap();
+                        let status_str = serde_json::to_string(status)?;
+
+                        let res = OutcomePacket::new(OutcomePacketType::BackendStatus, serde_json::from_str(&status_str).unwrap());
+                        let status_str = serde_json::to_string(&res)?;
+                        Ok(message_tx.send(Message::text(status_str))?)
                     }
 
                     _ => {Ok(())}
